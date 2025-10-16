@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "420500570354",
+    "project_id": "itca-proyectoai",
+    "storage_bucket": "itca-proyectoai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:420500570354:android:cbe1ebeea796fae379d06b",
+        "android_client_info": {
+          "package_name": "com.ITCA.ProyectoAI"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD9PXzd1-KwnIACyMnilK6D7OJ_5xXLTvU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

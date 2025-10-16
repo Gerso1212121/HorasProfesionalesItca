@@ -1,0 +1,28 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "itca-proyectoai",
+          "appId": "1:420500570354:android:cbe1ebeea796fae379d06b",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "itca-proyectoai",
+          "configurations": {
+            "android": "1:420500570354:android:cbe1ebeea796fae379d06b",
+            "web": "1:420500570354:web:3ca05707133fc79c79d06b"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "database": "(default)",
+    "location": "us-east1",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}

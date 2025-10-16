@@ -1,0 +1,2 @@
+C:/Users/Zelder/Downloads/ai_app_tests-GersonWilfredo/ai_app_tests-GersonWilfredo/android/app/.cxx/Debug/4f2a3f6d/x86_64/CMakeFiles/edit_cache.dir
+C:/Users/Zelder/Downloads/ai_app_tests-GersonWilfredo/ai_app_tests-GersonWilfredo/android/app/.cxx/Debug/4f2a3f6d/x86_64/CMakeFiles/rebuild_cache.dir
