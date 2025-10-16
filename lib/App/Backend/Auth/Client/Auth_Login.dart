@@ -12,7 +12,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as SupabaseAuth;
 
 /*----------|MODULOS|----------*/
-import '../../../utils/Utils_ServiceLog.dart';
+import '../../../Utils/Utils_ServiceLog.dart';
 import '../../../../Frontend/Widgets/auth/custom_input_field.dart';
 import '../../../Data/DataBase/DatabaseHelper.dart';
 import '../../../../Frontend/Widgets/log_Screen.dart';

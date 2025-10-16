@@ -2,7 +2,7 @@ import 'package:ai_app_tests/App/Backend/Auth/Admin/Admin_CitasContent.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as SupabaseAuth;
-import '../../../utils/Utils_ServiceLog.dart';
+import '../../../Utils/Utils_ServiceLog.dart';
 import '../Client/Auth_Login.dart';
 
 import 'Admin_DashboardContent.dart';

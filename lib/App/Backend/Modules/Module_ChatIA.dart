@@ -11,8 +11,8 @@ import '../../Data/Model_ChatFirebaseRemote.dart';
 import '../../Services/Service_Libros.dart';
 import '../../Services/Services_Cifrado.dart';
 import '../../Services/Service_TituloIA.dart';
-import '../../utils/Utils_DebugHelper.dart';
-import '../../utils/firestore_fix.dart';
+import '../../Utils/Utils_DebugHelper.dart';
+import '../../Utils/Utils_FirestorFix.dart';
 import 'Module_HistorialSesionesUsuario.dart';
 
 /*----------|SIN USO|----------*/

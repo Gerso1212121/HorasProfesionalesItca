@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../utils/Utils_ServiceLog.dart';
+import '../../../Utils/Utils_ServiceLog.dart';
 import 'Logic/Admin_AuditService.dart';
 
 class SecurityContent extends StatefulWidget {

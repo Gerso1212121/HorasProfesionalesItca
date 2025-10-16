@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../utils/Utils_ServiceLog.dart';
+import '../../../Utils/Utils_ServiceLog.dart';
 import 'Logic/Admin_AuditService.dart';
 
 class LogsContent extends StatefulWidget {

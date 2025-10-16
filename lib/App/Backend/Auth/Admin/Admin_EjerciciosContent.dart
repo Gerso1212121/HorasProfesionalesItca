@@ -4,7 +4,7 @@ import '../../../Data/DataBase/DatabaseHelper.dart';
 import '../../../Data/Models/ejercicio_model.dart';
 import '../../../Services/Services_Ejercicios.dart';
 import 'Logic/Admin_AuditService.dart';
-import '../../../utils/Utils_ServiceLog.dart';
+import '../../../Utils/Utils_ServiceLog.dart';
 
 class EjerciciosContent extends StatefulWidget {
   const EjerciciosContent({super.key});

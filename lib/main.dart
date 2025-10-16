@@ -19,7 +19,7 @@ import 'Frontend/Screens/auth/welcome_screen.dart';
 
 /*----------|IMPORTACIONES OTROS|----------*/
 import 'App/Data/DataBase/DatabaseHelper.dart';
-import 'App/utils/Utils_ServiceLog.dart';
+import 'App/Utils/Utils_ServiceLog.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
