@@ -29,20 +29,20 @@ class CustomBottomNavBar extends StatelessWidget {
           label: 'Home',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.book),
-          label: 'Diario',
+          icon: Icon(Icons.chat_bubble),
+          label: 'Chat IA',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.fitness_center),
           label: 'Ejercicios',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Perfil',
+          icon: Icon(Icons.menu_book),
+          label: 'Diario',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.bug_report),
-          label: 'Debug',
+          icon: Icon(Icons.person),
+          label: 'Perfil',
         ),
       ],
     );

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class EmailVerificationDialog extends StatefulWidget {
   final User user;
-  final VoidCallback? onVerified; // Callback para cuando se verifique el email
+  final VoidCallback? onVerified;
 
   const EmailVerificationDialog({
     Key? key,
@@ -16,158 +18,383 @@ class EmailVerificationDialog extends StatefulWidget {
       _EmailVerificationDialogState();
 }
 
-// Diálogo para mostrar la verificación de email
-class _EmailVerificationDialogState extends State<EmailVerificationDialog> {
-  // Variables para manejar el estado del diálogo
-  // _isLoading para mostrar un indicador de carga al enviar el email
-  // _emailSent para indicar si el email de verificación ha sido enviado
-  // _isChecking para manejar el estado de verificación del email
+class _EmailVerificationDialogState extends State<EmailVerificationDialog>
+    with SingleTickerProviderStateMixin {
   bool _isLoading = false;
   bool _emailSent = false;
   bool _isChecking = false;
+  late AnimationController _animationController;
 
-  // Construye el diálogo de verificación de email
-  // Incluye un título, contenido y acciones para enviar el email o verificarlo
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    )..forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      // Titule del diálogo
-      title: const Row(
-        children: [
-          Icon(
-            Icons.mark_email_unread,
-            color: Colors.orange,
-            size: 28,
-          ),
-          SizedBox(width: 8),
-          Text(
-            'Verificación de Email',
-            style: TextStyle(fontSize: 18),
-          ),
-        ],
-      ),
-      // Contenido del diálogo
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.orange.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.orange.shade200),
-            ),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.email_outlined,
-                  size: 48,
-                  color: Colors.orange,
-                ),
-                SizedBox(height: 12),
-                Text(
-                  'Tu correo electrónico no está verificado',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: AnimatedBuilder(
+        animation: _animationController,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: 0.9 + 0.1 * _animationController.value,
+            child: Opacity(
+              opacity: _animationController.value,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(28),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.white,
+                      const Color(0xFFF8F9FA),
+                    ],
                   ),
-                  textAlign: TextAlign.center,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 30,
+                      offset: const Offset(0, 15),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 8),
-                Text(
-                  'Necesitas verificar tu email para continuar. Te enviaremos un enlace de verificación.',
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 14,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-          if (_emailSent) ...[
-            SizedBox(height: 16),
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green.shade200),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.check_circle,
-                    color: Colors.green,
-                    size: 20,
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Email enviado. Revisa tu bandeja de entrada y spam.',
-                      style: TextStyle(
-                        color: Colors.green.shade700,
-                        fontSize: 13,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Icono animado
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFFFFA726),
+                            const Color(0xFFFF9800),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFF9800).withOpacity(0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        LucideIcons.mail,
+                        color: Colors.white,
+                        size: 40,
                       ),
                     ),
-                  ),
-                ],
+
+                    const SizedBox(height: 24),
+
+                    // Título
+                    Text(
+                      'Verifica tu Email',
+                      style: GoogleFonts.inter(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                        height: 1.2,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Descripción
+                    Text(
+                      'Hemos enviado un enlace de verificación a tu correo electrónico. Por favor, verifica tu cuenta para continuar.',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        color: Colors.black54,
+                        height: 1.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Información del correo
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF8E1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: const Color(0xFFFFE0B2),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: const Color(0xFFFFF3E0),
+                            ),
+                            child: const Icon(
+                              LucideIcons.mail,
+                              color: Color(0xFFFF9800),
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Correo electrónico',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  widget.user.email ?? 'Sin correo',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    if (_emailSent) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8F5E8),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFFC8E6C9),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Color(0xFF4CAF50),
+                              ),
+                              child: const Icon(
+                                LucideIcons.check,
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '¡Email enviado! Revisa tu bandeja de entrada y spam.',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF2E7D32),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 28),
+
+                    // Botones
+                    Row(
+                      children: [
+                        // Botón Cancelar
+                        Expanded(
+                          child: Container(
+                            height: 52,
+                            margin: const EdgeInsets.only(right: 8),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: const Color(0xFF86A8E7),
+                                width: 2,
+                              ),
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.white,
+                                  const Color(0xFFF8F9FA),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                await FirebaseAuth.instance.signOut();
+                                if (mounted) {
+                                  Navigator.of(context).pop();
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: Text(
+                                'Cancelar',
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF86A8E7),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Botón de acción principal
+                        Expanded(
+                          child: Container(
+                            height: 52,
+                            margin: const EdgeInsets.only(left: 8),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              gradient: LinearGradient(
+                                colors: _emailSent
+                                    ? [
+                                        const Color(0xFF4CAF50),
+                                        const Color(0xFF45A049),
+                                      ]
+                                    : [
+                                        const Color(0xFFFFA726),
+                                        const Color(0xFFFF9800),
+                                      ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: (_emailSent
+                                          ? const Color(0xFF4CAF50)
+                                          : const Color(0xFFFF9800))
+                                      .withOpacity(0.4),
+                                  blurRadius: 15,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: ElevatedButton(
+                              onPressed: _emailSent
+                                  ? (_isChecking ? null : _checkEmailVerification)
+                                  : (_isLoading ? null : _sendVerificationEmail),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: _isLoading || _isChecking
+                                  ? SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                Colors.white),
+                                      ),
+                                    )
+                                  : Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          _emailSent
+                                              ? LucideIcons.checkCircle
+                                              : LucideIcons.send,
+                                          color: Colors.white,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          _emailSent
+                                              ? 'Ya Verifiqué'
+                                              : 'Enviar Email',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Texto de ayuda
+                    Text(
+                      '¿No recibiste el email? Revisa tu carpeta de spam.',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.black45,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
-        ],
+          );
+        },
       ),
-      actions: [
-        TextButton(
-          onPressed: () async {
-            await FirebaseAuth.instance.signOut();
-            Navigator.of(context).pop();
-          },
-          child: Text(
-            'Cancelar',
-            style: TextStyle(color: Colors.grey.shade600),
-          ),
-        ),
-        if (!_emailSent)
-          ElevatedButton(
-            onPressed: _isLoading ? null : _sendVerificationEmail,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-              foregroundColor: Colors.white,
-            ),
-            child: _isLoading
-                ? SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : Text('Enviar Email'),
-          ),
-        if (_emailSent)
-          ElevatedButton(
-            onPressed: _isChecking ? null : _checkEmailVerification,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
-            child: _isChecking
-                ? SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : Text('Ya Verifiqué'),
-          ),
-      ],
     );
   }
 
@@ -183,19 +410,42 @@ class _EmailVerificationDialogState extends State<EmailVerificationDialog> {
       });
 
       // Mostrar snackbar de confirmación
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 8),
-              Text('Email de verificación enviado'),
-            ],
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFF4CAF50),
+                  ),
+                  child: const Icon(
+                    LucideIcons.check,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Email de verificación enviado',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF4CAF50),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
           ),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 3),
-        ),
-      );
+        );
+      }
     } catch (e) {
       // Manejo de errores específicos
       String errorMessage = 'Error al enviar email';
@@ -206,19 +456,44 @@ class _EmailVerificationDialogState extends State<EmailVerificationDialog> {
         errorMessage = 'Error de conexión. Verifica tu internet.';
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.error, color: Colors.white),
-              SizedBox(width: 8),
-              Expanded(child: Text(errorMessage)),
-            ],
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFFF44336),
+                  ),
+                  child: const Icon(
+                    LucideIcons.x,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    errorMessage,
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFFF44336),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
           ),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 4),
-        ),
-      );
+        );
+      }
     } finally {
       setState(() {
         _isLoading = false;
@@ -238,59 +513,127 @@ class _EmailVerificationDialogState extends State<EmailVerificationDialog> {
 
       if (refreshedUser != null && refreshedUser.emailVerified) {
         // Email verificado exitosamente
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 8),
-                Text('¡Email verificado exitosamente!'),
-              ],
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xFF4CAF50),
+                    ),
+                    child: const Icon(
+                      LucideIcons.check,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    '¡Email verificado exitosamente!',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: const Color(0xFF4CAF50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
             ),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
+          );
 
-        // Cerrar el diálogo
-        Navigator.of(context).pop();
+          // Cerrar el diálogo
+          Navigator.of(context).pop();
 
-        // Ejecutar callback si existe
-        if (widget.onVerified != null) {
-          widget.onVerified!();
+          // Ejecutar callback si existe
+          if (widget.onVerified != null) {
+            widget.onVerified!();
+          }
         }
       } else {
         // Email aún no verificado
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xFFFF9800),
+                    ),
+                    child: const Icon(
+                      LucideIcons.alertCircle,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Email aún no verificado. Revisa tu bandeja de entrada.',
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: const Color(0xFFFF9800),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
-                Icon(Icons.warning, color: Colors.white),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                      'Email aún no verificado. Revisa tu bandeja de entrada.'),
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFFF44336),
+                  ),
+                  child: const Icon(
+                    LucideIcons.x,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Error al verificar el estado',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 3),
+            backgroundColor: const Color(0xFFF44336),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.error, color: Colors.white),
-              SizedBox(width: 8),
-              Text('Error al verificar el estado'),
-            ],
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
     } finally {
       setState(() {
         _isChecking = false;
@@ -304,7 +647,7 @@ void showEmailVerificationDialog(BuildContext context, User user,
     {VoidCallback? onVerified}) {
   showDialog(
     context: context,
-    barrierDismissible: false, // No se puede cerrar tocando fuera
+    barrierDismissible: false,
     builder: (BuildContext context) {
       return EmailVerificationDialog(
         user: user,

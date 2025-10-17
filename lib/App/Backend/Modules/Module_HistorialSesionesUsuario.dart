@@ -21,7 +21,6 @@ class HistorialSesionesUsuario extends StatefulWidget {
 class _HistorialSesionesUsuarioState extends State<HistorialSesionesUsuario> {
   List<SesionChat> _sesiones = [];
   bool _isLoading = true;
-  //String _nombreUsuario = "";
 
   @override
   void initState() {
@@ -37,12 +36,8 @@ class _HistorialSesionesUsuarioState extends State<HistorialSesionesUsuario> {
       final sesiones = await FirebaseChatStorage.getSesionesChat();
       developer.log('📊 SESIONES CARGADAS DESDE FIREBASE: ${sesiones.length}');
 
-      // Debug: mostrar detalles de cada sesión
-      for (int i = 0; i < sesiones.length; i++) {
-        final sesion = sesiones[i];
-        developer.log(
-            '📝 Sesión $i: Usuario="${sesion.usuario}", Resumen="${sesion.resumen}", Fecha="${sesion.fecha}", Mensajes=${sesion.mensajes.length}');
-      }
+      // Ordenar por fecha (más reciente primero)
+      sesiones.sort((a, b) => b.fecha.compareTo(a.fecha));
 
       setState(() {
         _sesiones = sesiones;
@@ -53,7 +48,10 @@ class _HistorialSesionesUsuarioState extends State<HistorialSesionesUsuario> {
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al cargar sesiones: $e')),
+          SnackBar(
+            content: Text('Error al cargar sesiones: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -64,9 +62,20 @@ class _HistorialSesionesUsuarioState extends State<HistorialSesionesUsuario> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Eliminar sesión'),
-        content:
-            const Text('¿Estás seguro de que quieres eliminar esta sesión?'),
+        title: const Text('🗑️ Eliminar sesión'),
+        content: RichText(
+          text: const TextSpan(
+            style: TextStyle(color: Colors.black87, fontSize: 14),
+            children: [
+              TextSpan(text: '¿Estás seguro de que quieres eliminar '),
+              TextSpan(
+                text: 'esta sesión',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              TextSpan(text: '? Esta acción no se puede deshacer.'),
+            ],
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -74,6 +83,7 @@ class _HistorialSesionesUsuarioState extends State<HistorialSesionesUsuario> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Eliminar'),
           ),
         ],
@@ -83,18 +93,15 @@ class _HistorialSesionesUsuarioState extends State<HistorialSesionesUsuario> {
     if (confirm == true) {
       try {
         developer.log('🗑️ Eliminando sesión: ${sesion.fecha}');
-
-        // Eliminar de Firebase y local
         await FirebaseChatStorage.deleteSesionChat(sesion.fecha);
-
-        // Recargar todas las sesiones para asegurar consistencia
         await _cargarSesionesUsuario();
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Sesión eliminada correctamente'),
-              backgroundColor: Colors.green,
+            SnackBar(
+              content: const Text('✅ Sesión eliminada correctamente'),
+              backgroundColor: Colors.green.shade600,
+              behavior: SnackBarBehavior.floating,
             ),
           );
         }
@@ -116,19 +123,79 @@ class _HistorialSesionesUsuarioState extends State<HistorialSesionesUsuario> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('🗑️ Opciones de Borrado'),
-        content: const Text('¿Qué deseas eliminar?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.white,
+        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+        contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+        actionsPadding: const EdgeInsets.all(16),
+        title: Row(
+          children: const [
+            Icon(Icons.delete_sweep, color: Colors.red),
+            SizedBox(width: 12),
+            Text(
+              'Opciones de Borrado',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Selecciona qué deseas eliminar:',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: const [
+                Icon(Icons.warning_amber, size: 20, color: Colors.orange),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Esta acción eliminará todos tus chats y no se puede deshacer.',
+                    style: TextStyle(fontSize: 13, color: Colors.orange),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+          // Botón cancelar
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () => Navigator.pop(context),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.black87,
+                side: BorderSide(color: Colors.grey.shade300),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              child: const Text('Cancelar'),
+            ),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _eliminarTodosLosChats();
-            },
-            child: const Text('🗑️ Borrar todos mis chats'),
+          const SizedBox(width: 12),
+          // Botón borrar todo
+          Expanded(
+            child: FilledButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _eliminarTodosLosChats();
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red.shade600,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text(
+                'Borrar todos',
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
           ),
         ],
       ),
@@ -139,18 +206,68 @@ class _HistorialSesionesUsuarioState extends State<HistorialSesionesUsuario> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('⚠️ Confirmar eliminación'),
-        content: const Text(
-            '¿Estás seguro de que quieres eliminar TODOS tus chats? Esta acción no se puede deshacer.'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.white,
+        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+        contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+        actionsPadding: const EdgeInsets.all(16),
+        title: Row(
+          children: const [
+            Icon(Icons.warning_amber, color: Colors.red, size: 28),
+            SizedBox(width: 12),
+            Text(
+              'Confirmar Eliminación',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text(
+              '¿Estás seguro de que quieres eliminar TODOS tus chats?',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'Se eliminarán todas tus conversaciones y esta acción no se puede deshacer.',
+              style: TextStyle(fontSize: 13, color: Colors.black54),
+            ),
+          ],
+        ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
+          // Botón cancelar
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () => Navigator.pop(context, false),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.black87,
+                side: BorderSide(color: Colors.grey.shade300),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              child: const Text('Cancelar'),
+            ),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('SÍ, ELIMINAR TODO'),
+          const SizedBox(width: 12),
+          // Botón eliminar todo
+          Expanded(
+            child: FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red.shade600,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text(
+                '🗑️ ELIMINAR TODO',
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
           ),
         ],
       ),
@@ -159,15 +276,14 @@ class _HistorialSesionesUsuarioState extends State<HistorialSesionesUsuario> {
     if (confirm == true) {
       try {
         await FirebaseChatStorage.deleteAllSesionesChat();
-
-        // Recargar todas las sesiones para asegurar consistencia
         await _cargarSesionesUsuario();
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Todos los chats han sido eliminados'),
-              backgroundColor: Colors.green,
+            SnackBar(
+              content: const Text('✅ Todos los chats han sido eliminados'),
+              backgroundColor: Colors.green.shade600,
+              behavior: SnackBarBehavior.floating,
             ),
           );
         }
@@ -188,82 +304,347 @@ class _HistorialSesionesUsuarioState extends State<HistorialSesionesUsuario> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FDFF),
       appBar: AppBar(
-        title: const Text("💬 Mis Chats Anteriores"),
+        title: const Text(
+          "Historial de Chats",
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF2D3748),
+          ),
+        ),
+        backgroundColor: const Color(0xFFF2FFFF),
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        centerTitle: false,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFF2FFFF), Color(0xFFF2FFFF)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+            border: Border(
+              bottom: BorderSide(
+                color: Color(0xFFE2E8F0),
+                width: 1,
+              ),
+            ),
+          ),
+        ),
         actions: [
+          // Botón de actualizar
           IconButton(
-            icon: const Icon(Icons.delete_sweep),
-            onPressed: _mostrarOpcionesBorrado,
-            tooltip: "Opciones de borrado",
-          ),
-          IconButton(
-            icon: const Icon(Icons.bug_report),
-            onPressed: _debugSesiones,
-            tooltip: "Debug",
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF86A8E7).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.refresh_rounded,
+                color: Color(0xFF86A8E7),
+                size: 20,
+              ),
+            ),
             onPressed: _cargarSesionesUsuario,
             tooltip: "Actualizar",
           ),
+
+          // Botón de borrado
+          IconButton(
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF66B7D).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.delete_sweep_rounded,
+                color: Color(0xFFF66B7D),
+                size: 20,
+              ),
+            ),
+            onPressed: _mostrarOpcionesBorrado,
+            tooltip: "Opciones de borrado",
+          ),
+
+          const SizedBox(width: 8),
         ],
       ),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(),
-            )
+          ? _buildLoadingState()
           : _sesiones.isEmpty
-              ? const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.chat_bubble_outline,
-                        size: 64,
-                        color: Colors.grey,
-                      ),
-                      SizedBox(height: 16),
-                      Text('No tienes chats anteriores'),
-                    ],
+              ? _buildEmptyState()
+              : _buildSesionesList(),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF86A8E7)),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Cargando tus conversaciones...',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Ícono central
+              Container(
+                width: 140,
+                height: 140,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF86A8E7), Color(0xFFB2F5DB)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _cargarSesionesUsuario,
-                  child: ListView.builder(
-                    itemCount: _sesiones.length,
-                    itemBuilder: (context, index) {
-                      return SesionCard(
-                        sesion: _sesiones[index],
-                        onTap: () => _abrirSesion(_sesiones[index]),
-                        onDelete: () => _eliminarSesion(index),
-                      );
-                    },
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 12,
+                      offset: Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.chat_bubble_outline_rounded,
+                  size: 60,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Título
+              Text(
+                '¡Aún no tienes chats!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Subtítulo
+              Text(
+                'Comienza una nueva conversación con tu asistente AI y guarda tus progresos.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Botón de acción
+              FilledButton.icon(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => ChatAi()),
+                  );
+                },
+                icon: const Icon(Icons.add_circle_outline),
+                label: const Text('Iniciar Nuevo Chat'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF86A8E7),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
                   ),
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSesionesList() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFFF2FFFF),
+            Color(0xFFE8F5E8),
+          ],
+        ),
+      ),
+      child: Column(
+        children: [
+          // Header informativo
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.8),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, size: 18, color: Colors.blue),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${_sesiones.length} conversación${_sesiones.length != 1 ? 'es' : ''} guardada${_sesiones.length != 1 ? 's' : ''}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Lista de sesiones
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _cargarSesionesUsuario,
+              color: const Color(0xFF86A8E7),
+              child: ListView.builder(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                itemCount: _sesiones.length,
+                itemBuilder: (context, index) {
+                  final sesion = _sesiones[index];
+                  return GestureDetector(
+                    onTap: () => _abrirSesion(sesion),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFE8F5E8), Color(0xFFF2FFFF)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                        border: Border.all(
+                          color: Colors.green.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade200.withOpacity(0.3),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.chat_bubble_outline_rounded,
+                              color: Colors.green,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  sesion.resumen.isNotEmpty
+                                      ? sesion.resumen
+                                      : 'Sin resumen',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF2D3748),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Última actualización: ${sesion.fecha}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.black45,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => _eliminarSesion(index),
+                            icon: const Icon(
+                              Icons.delete_outline_rounded,
+                              color: Color(0xFFF66B7D),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   void _abrirSesion(SesionChat sesion) async {
-    // Asegurar que los mensajes estén descifrados antes de abrir
     await _descifrarYRetomarConversacion(sesion);
   }
 
   Future<void> _descifrarYRetomarConversacion(SesionChat sesion) async {
     developer.log('🔄 RETOMANDO CONVERSACIÓN: ${sesion.resumen}');
-    developer.log('🔐 FORZANDO DESCIFRADO DE MENSAJES...');
 
     try {
-      // DESCIFRADO SIMPLE: Usar el método simple y directo
       final mensajesParaDescifrar =
           sesion.mensajes.map((m) => m.toJson()).toList();
-
-      developer.log(
-          '🔐 DESCIFRADO SIMPLE: Intentando descifrar ${mensajesParaDescifrar.length} mensajes...');
 
       final mensajesDescifrados =
           await CifradoService.descifrarMensajes(mensajesParaDescifrar);
 
-      // Crear nueva sesión con mensajes descifrados
       final sesionDescifrada = SesionChat(
         fecha: sesion.fecha,
         usuario: sesion.usuario,
@@ -273,9 +654,6 @@ class _HistorialSesionesUsuarioState extends State<HistorialSesionesUsuario> {
         tituloDinamico: sesion.tituloDinamico,
       );
 
-      developer.log(
-          '✅ SIMPLE: Mensajes descifrados correctamente: ${sesionDescifrada.mensajes.length} mensajes');
-
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -283,8 +661,7 @@ class _HistorialSesionesUsuarioState extends State<HistorialSesionesUsuario> {
         ),
       );
     } catch (e) {
-      developer.log('❌ Error en descifrado simple: $e');
-      // Si falla el descifrado, intentar abrir con la sesión original
+      developer.log('❌ Error en descifrado: $e');
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -301,37 +678,37 @@ class _HistorialSesionesUsuarioState extends State<HistorialSesionesUsuario> {
 
       developer.log('🐛 === DEBUG SESIONES ===');
       developer.log('📊 Total sesiones en storage: ${todasSesiones.length}');
-      developer.log(
-          '👤 Usuario actual: ${user?.displayName ?? user?.email ?? "Sin usuario"}');
-
-      for (int i = 0; i < todasSesiones.length; i++) {
-        final sesion = todasSesiones[i];
-        developer.log(
-            '📝 Sesión $i: Usuario="${sesion.usuario}", Resumen="${sesion.resumen}", Fecha="${sesion.fecha}"');
-      }
 
       if (mounted) {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Debug Info'),
+            title: const Row(
+              children: [
+                Icon(Icons.bug_report, color: Colors.orange),
+                SizedBox(width: 8),
+                Text('Debug Info'),
+              ],
+            ),
             content: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text('Total sesiones: ${todasSesiones.length}'),
-                  Text(
-                      'Usuario actual: ${user?.displayName ?? user?.email ?? "Sin usuario"}'),
-                  Text('Email: ${user?.email ?? "Sin email"}'),
-                  const SizedBox(height: 10),
-                  const Text('Sesiones encontradas:',
+                  Text('Usuario: ${user?.email ?? "Sin usuario"}'),
+                  const SizedBox(height: 16),
+                  const Text('Sesiones:',
                       style: TextStyle(fontWeight: FontWeight.bold)),
-                  ...todasSesiones.map((s) => Padding(
+                  ...todasSesiones.take(5).map((s) => Padding(
                         padding: const EdgeInsets.only(top: 4),
-                        child: Text('• Usuario: "${s.usuario}"',
+                        child: Text('• ${s.resumen}',
                             style: const TextStyle(fontSize: 12)),
                       )),
+                  if (todasSesiones.length > 5)
+                    Text('... y ${todasSesiones.length - 5} más',
+                        style:
+                            const TextStyle(fontSize: 12, color: Colors.grey)),
                 ],
               ),
             ),
@@ -346,136 +723,6 @@ class _HistorialSesionesUsuarioState extends State<HistorialSesionesUsuario> {
       }
     } catch (e) {
       developer.log('❌ Error en debug: $e');
-    }
-  }
-}
-
-class DetalleSesionUsuario extends StatelessWidget {
-  final SesionChat sesion;
-
-  const DetalleSesionUsuario({super.key, required this.sesion});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Detalle del Chat'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Resumen de la sesión',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(sesion.resumen),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Icon(Icons.calendar_today,
-                            size: 16, color: Colors.grey[600]),
-                        const SizedBox(width: 4),
-                        Text(_formatFecha(sesion.fecha)),
-                        const SizedBox(width: 16),
-                        Icon(Icons.message, size: 16, color: Colors.grey[600]),
-                        const SizedBox(width: 4),
-                        Text('${sesion.mensajes.length} mensajes'),
-                      ],
-                    ),
-                    if (sesion.etiquetas.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 4,
-                        children: sesion.etiquetas
-                            .map((etiqueta) => Chip(
-                                  label: Text(etiqueta),
-                                  backgroundColor: Colors.blue[100],
-                                ))
-                            .toList(),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Conversación:',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: ListView.builder(
-                itemCount: sesion.mensajes
-                    .where((m) =>
-                        m.emisor != "Sistema" || m.contenido.startsWith("⚠️"))
-                    .length,
-                itemBuilder: (context, index) {
-                  final mensajesVisibles = sesion.mensajes
-                      .where((m) =>
-                          m.emisor != "Sistema" || m.contenido.startsWith("⚠️"))
-                      .toList();
-                  final mensaje = mensajesVisibles[index];
-                  final isUser = mensaje.emisor == "Usuario";
-
-                  return Container(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      mainAxisAlignment: isUser
-                          ? MainAxisAlignment.end
-                          : MainAxisAlignment.start,
-                      children: [
-                        Flexible(
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color:
-                                  isUser ? Colors.blue[100] : Colors.grey[200],
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  mensaje.emisor,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(mensaje.contenido),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _formatFecha(String fecha) {
-    try {
-      final dateTime = DateTime.parse(fecha);
-      return "${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
-    } catch (e) {
-      return fecha;
     }
   }
 }

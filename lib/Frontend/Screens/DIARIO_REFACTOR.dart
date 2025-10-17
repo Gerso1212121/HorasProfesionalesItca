@@ -2,6 +2,7 @@ import 'package:ai_app_tests/App/Data/Models/diario_entry.dart';
 import 'package:ai_app_tests/App/Services/Service_Diario.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class DiarioScreen extends StatefulWidget {
   const DiarioScreen({super.key});
@@ -16,16 +17,16 @@ class _DiarioScreenState extends State<DiarioScreen> {
   final DiarioService _diarioService = DiarioService();
   bool _isLoading = false;
   EstadoAnimo? _estadoAnimoSeleccionado;
-  List<DiarioEntry>? _entradasCache; // Cache para manejo inmediato
+  List<DiarioEntry>? _entradasCache;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: const Color(0xFFF2FFFF), // Mismo color de fondo del Home
       body: SafeArea(
         child: Column(
           children: [
-            // Header
+            // Header rediseñado
             _buildHeader(),
 
             // Contenido principal
@@ -35,21 +36,19 @@ class _DiarioScreenState extends State<DiarioScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Paso 1: Selector de emociones
-                    _buildSelectorEmociones(),
-
-                    const SizedBox(height: 24),
-
-                    // Paso 2: Campo de título
+                    // Campo de título rediseñado
                     _buildCampoTitulo(),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
 
-                    // Paso 3: Área de contenido
+                    // Área de contenido mejorada
                     _buildAreaContenido(),
 
-                    const SizedBox(
-                        height: 100), // Espacio para el botón flotante
+                    const SizedBox(height: 20),
+
+                    // Selector de emociones mejorado
+                    _buildSelectorEmociones(),
+                    const SizedBox(height: 100),
                   ],
                 ),
               ),
@@ -58,7 +57,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
         ),
       ),
 
-      // Botón flotante para guardar
+      // Botón flotante rediseñado
       floatingActionButton: _buildBotonGuardar(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
@@ -66,31 +65,73 @@ class _DiarioScreenState extends State<DiarioScreen> {
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFB2F5DB), Color(0xFF86A8E7)],
+          begin: Alignment.bottomLeft,
+          end: Alignment.topRight,
+        ),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, 2),
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Row(
         children: [
+          // Botón de regresar
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.arrow_back_rounded,
+                color: const Color(0xFFF66B7D),
+                size: 22,
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 16),
+
           // Ícono del diario
           Container(
-            width: 44,
-            height: 44,
-            decoration: const BoxDecoration(
-              color: Color(0xFF6366F1),
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.9),
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
             child: const Center(
               child: Text(
                 '📖',
-                style: TextStyle(fontSize: 22),
+                style: TextStyle(fontSize: 24),
               ),
             ),
           ),
@@ -102,19 +143,20 @@ class _DiarioScreenState extends State<DiarioScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Mi Diario',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+                  style: GoogleFonts.inter(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
                     color: Colors.black87,
                   ),
                 ),
                 Text(
                   _formatDate(DateTime.now()),
-                  style: const TextStyle(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: Colors.grey,
+                    color: Colors.black54,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -125,15 +167,22 @@ class _DiarioScreenState extends State<DiarioScreen> {
           GestureDetector(
             onTap: _mostrarHistorial,
             child: Container(
-              width: 44,
-              height: 44,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
-                color: Colors.grey[100],
+                color: Colors.white.withOpacity(0.9),
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              child: const Icon(
-                Icons.history,
-                color: Colors.grey,
+              child: Icon(
+                Icons.history_rounded,
+                color: const Color(0xFFF66B7D),
                 size: 22,
               ),
             ),
@@ -148,107 +197,150 @@ class _DiarioScreenState extends State<DiarioScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
           ),
         ],
+        border: Border.all(
+          color: Colors.grey.withOpacity(0.2),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Título mejorado
           Row(
             children: [
               Container(
-                width: 32,
-                height: 38,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFF66B7D), Color(0xFFFF8E6E)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   shape: BoxShape.circle,
                 ),
-                child: const Center(
-                  child: Text('1',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.orange,
-                      )),
+                child: Center(
+                  child: Text(
+                    '3',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                '¿Cómo te has sentido hoy?',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+              Expanded(
+                child: Text(
+                  '¿Cómo te sientes hoy?',
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
 
-          // Grid de emociones
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 2,
-              crossAxisSpacing: 9,
-              mainAxisSpacing: 12,
+          // Descripción
+          Padding(
+            padding: const EdgeInsets.only(left: 48),
+            child: Text(
+              'Selecciona tu estado emocional actual',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
             ),
-            itemCount: EstadoAnimo.values.length,
-            itemBuilder: (context, index) {
-              final estado = EstadoAnimo.values[index];
-              final isSelected = _estadoAnimoSeleccionado == estado;
+          ),
 
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _estadoAnimoSeleccionado = estado;
-                  });
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? const Color(0xFF6366F1).withOpacity(0.1)
-                        : Colors.grey[50],
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isSelected
-                          ? const Color(0xFF6366F1)
-                          : Colors.grey[300]!,
-                      width: isSelected ? 2 : 1,
+          const SizedBox(height: 20),
+
+          // Grid de emociones horizontal mejorado
+          SizedBox(
+            height: 100,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: EstadoAnimo.values.length,
+              itemBuilder: (context, index) {
+                final estado = EstadoAnimo.values[index];
+                final isSelected = _estadoAnimoSeleccionado == estado;
+
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _estadoAnimoSeleccionado = estado;
+                    });
+                  },
+                  child: Container(
+                    width: 80,
+                    margin: EdgeInsets.only(
+                      right: index == EstadoAnimo.values.length - 1 ? 0 : 12,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: isSelected
+                          ? const LinearGradient(
+                              colors: [Color(0xFFB2F5DB), Color(0xFF86A8E7)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : null,
+                      color: isSelected ? null : Colors.grey[50],
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isSelected
+                            ? const Color(0xFF86A8E7)
+                            : Colors.grey[300]!,
+                        width: isSelected ? 2 : 1,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFF86A8E7).withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          estado.emoji,
+                          style: const TextStyle(fontSize: 24),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          estado.nombre,
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                            color:
+                                isSelected ? Colors.black87 : Colors.grey[700],
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                        ),
+                      ],
                     ),
                   ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        estado.emoji,
-                        style: const TextStyle(fontSize: 20),
-                      ),
-                      Text(
-                        estado.nombre,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight:
-                              isSelected ? FontWeight.w600 : FontWeight.normal,
-                          color: isSelected
-                              ? const Color(0xFF6366F1)
-                              : Colors.black87,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -260,14 +352,17 @@ class _DiarioScreenState extends State<DiarioScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
           ),
         ],
+        border: Border.all(
+          color: Colors.grey.withOpacity(0.2),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,24 +370,31 @@ class _DiarioScreenState extends State<DiarioScreen> {
           Row(
             children: [
               Container(
-                width: 32,
-                height: 32,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF86A8E7), Color(0xFFB2F5DB)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   shape: BoxShape.circle,
                 ),
-                child: const Center(
-                  child: Text('2',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
-                      )),
+                child: Center(
+                  child: Text(
+                    '1',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 'Título de tu día',
-                style: TextStyle(
+                style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   color: Colors.black87,
@@ -303,32 +405,46 @@ class _DiarioScreenState extends State<DiarioScreen> {
 
           const SizedBox(height: 16),
 
-          // Campo de título
+          // Campo de título mejorado - AHORA CON MÚLTIPLES LÍNEAS
           Container(
             decoration: BoxDecoration(
               color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[300]!),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _tituloController.text.isNotEmpty
+                    ? const Color(0xFF86A8E7).withOpacity(0.5)
+                    : Colors.grey[300]!,
+              ),
             ),
             child: TextField(
               controller: _tituloController,
-              style: const TextStyle(
+              maxLines: null, // Permite múltiples líneas
+              minLines: 1, // Mínimo una línea
+              textInputAction: TextInputAction.done,
+              style: GoogleFonts.inter(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: Colors.black87,
               ),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Ej: Un día increíble, Reflexiones matutinas...',
-                hintStyle: TextStyle(
+                hintStyle: GoogleFonts.inter(
                   color: Colors.grey,
-                  fontSize: 16,
+                  fontSize: 15,
                   fontWeight: FontWeight.normal,
                 ),
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.all(16),
+                contentPadding: const EdgeInsets.all(16),
+                suffixIcon: _tituloController.text.isNotEmpty
+                    ? Icon(
+                        Icons.check_circle,
+                        color: const Color(0xFF4CAF50),
+                        size: 20,
+                      )
+                    : null,
               ),
               onChanged: (text) {
-                setState(() {}); // Para actualizar el estado del botón
+                setState(() {});
               },
             ),
           ),
@@ -342,14 +458,17 @@ class _DiarioScreenState extends State<DiarioScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
           ),
         ],
+        border: Border.all(
+          color: Colors.grey.withOpacity(0.2),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -357,24 +476,31 @@ class _DiarioScreenState extends State<DiarioScreen> {
           Row(
             children: [
               Container(
-                width: 32,
-                height: 32,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFF66B7D), Color(0xFFFF8E6E)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   shape: BoxShape.circle,
                 ),
-                child: const Center(
-                  child: Text('3',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                      )),
+                child: Center(
+                  child: Text(
+                    '2',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 'Cuéntanos tu día',
-                style: TextStyle(
+                style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   color: Colors.black87,
@@ -385,21 +511,25 @@ class _DiarioScreenState extends State<DiarioScreen> {
 
           const SizedBox(height: 16),
 
-          // Campo de contenido
+          // Campo de contenido mejorado
           Container(
-            height: 200,
+            height: 220,
             decoration: BoxDecoration(
               color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[300]!),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _contenidoController.text.isNotEmpty
+                    ? const Color(0xFF86A8E7).withOpacity(0.5)
+                    : Colors.grey[300]!,
+              ),
             ),
             child: TextField(
               controller: _contenidoController,
               maxLines: null,
               expands: true,
               textAlignVertical: TextAlignVertical.top,
-              style: const TextStyle(
-                fontSize: 16,
+              style: GoogleFonts.inter(
+                fontSize: 15,
                 height: 1.5,
                 color: Colors.black87,
               ),
@@ -408,15 +538,28 @@ class _DiarioScreenState extends State<DiarioScreen> {
                     'Escribe aquí todo lo que quieras recordar de este día...\n\n• ¿Qué hiciste?\n• ¿Cómo te sentiste?\n• ¿Qué aprendiste?\n• ¿Qué te hizo feliz?',
                 hintStyle: TextStyle(
                   color: Colors.grey,
-                  fontSize: 15,
+                  fontSize: 14,
                   height: 1.4,
                 ),
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.all(16),
               ),
               onChanged: (text) {
-                setState(() {}); // Para actualizar el estado del botón
+                setState(() {});
               },
+            ),
+          ),
+
+          // Contador de palabras
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              '${_contenidoController.text.split(RegExp(r'\s+')).where((word) => word.isNotEmpty).length} palabras',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
             ),
           ),
         ],
@@ -429,30 +572,257 @@ class _DiarioScreenState extends State<DiarioScreen> {
         _tituloController.text.trim().isNotEmpty &&
         _estadoAnimoSeleccionado != null;
 
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: FloatingActionButton.extended(
+    // Se esconde cuando el usuario está escribiendo (teclado visible)
+    final isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
+
+    if (isKeyboardVisible && !puedeGuardar) {
+      return const SizedBox.shrink(); // Se esconde completamente
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      margin: const EdgeInsets.only(bottom: 20),
+      child: FloatingActionButton(
         onPressed: _isLoading || !puedeGuardar ? null : _guardarEntrada,
-        backgroundColor:
-            puedeGuardar ? const Color(0xFF6366F1) : Colors.grey[300],
-        foregroundColor: puedeGuardar ? Colors.white : Colors.grey,
-        elevation: puedeGuardar ? 8 : 2,
-        icon: _isLoading
-            ? const SizedBox(
+        backgroundColor: puedeGuardar
+            ? const Color(0xFFF66B7D) // Color del botón del Home
+            : Colors.grey[400],
+        foregroundColor: Colors.white,
+        elevation: 8,
+        child: _isLoading
+            ? SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
-            : const Icon(Icons.save_rounded),
-        label: Text(
-          _isLoading ? 'Guardando...' : 'Guardar en mi diario',
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+            : const Icon(Icons.save_rounded, size: 24),
+      ),
+    );
+  }
+
+  // === MÉTODOS ORIGINALES (SE MANTIENEN IGUAL) ===
+
+  Future<void> _guardarEntrada() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _diarioService.crearEntrada(
+        contenido: _contenidoController.text.trim(),
+        categoria: _tituloController.text.trim(),
+        estadoAnimo: _estadoAnimoSeleccionado?.nombre,
+        valoracion: _estadoAnimoSeleccionado?.valor,
+      );
+
+      // Limpiar campos
+      _contenidoController.clear();
+      _tituloController.clear();
+      _estadoAnimoSeleccionado = null;
+
+      // Limpiar cache para que se recargue con la nueva entrada
+      _entradasCache = null;
+
+      // Mostrar modal de éxito
+      if (mounted) {
+        _mostrarModalExito();
+      }
+    } catch (e) {
+      // Mostrar modal de error
+      if (mounted) {
+        _mostrarModalError('Error al guardar: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _mostrarModalExito() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icono de éxito animado
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF4CAF50), Color(0xFF45C7C1)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_rounded,
+                  color: Colors.white,
+                  size: 40,
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Título
+              Text(
+                '¡Guardado exitoso!',
+                style: GoogleFonts.inter(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Mensaje
+              Text(
+                'Tu día ha sido guardado en el diario 📖✨',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  color: Colors.grey[700],
+                  height: 1.4,
+                ),
+              ),
+
+              const SizedBox(height: 28),
+
+              // Botón de aceptar
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4CAF50),
+                    foregroundColor: Colors.white,
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(
+                    '¡Entendido!',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _mostrarModalError(String mensaje) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icono de error
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.error_outline_rounded,
+                  color: Colors.red[600],
+                  size: 40,
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Título
+              Text(
+                'Error al guardar',
+                style: GoogleFonts.inter(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Mensaje de error
+              Text(
+                mensaje,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  color: Colors.grey[700],
+                  height: 1.4,
+                ),
+              ),
+
+              const SizedBox(height: 28),
+
+              // Botón de aceptar
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red[600],
+                    foregroundColor: Colors.white,
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(
+                    'Reintentar',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -497,9 +867,9 @@ class _DiarioScreenState extends State<DiarioScreen> {
               padding: const EdgeInsets.all(20),
               child: Row(
                 children: [
-                  const Text(
+                  Text(
                     '📚 Mi Historial',
-                    style: TextStyle(
+                    style: GoogleFonts.inter(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
@@ -514,7 +884,8 @@ class _DiarioScreenState extends State<DiarioScreen> {
                         color: Colors.grey[100],
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.close, size: 18),
+                      child:
+                          Icon(Icons.close, size: 18, color: Colors.grey[600]),
                     ),
                   ),
                 ],
@@ -564,7 +935,6 @@ class _DiarioScreenState extends State<DiarioScreen> {
                           );
                         }
 
-                        // Guardar en cache la primera vez
                         WidgetsBinding.instance.addPostFrameCallback((_) {
                           if (_entradasCache == null) {
                             setState(() {
@@ -643,26 +1013,25 @@ class _DiarioScreenState extends State<DiarioScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.grey[200]!),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header con fecha y botón eliminar
             Row(
               children: [
                 Expanded(
                   child: Text(
                     _formatDateShort(DateTime.parse(entrada.fecha)),
-                    style: const TextStyle(
+                    style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                       color: Colors.grey,
@@ -672,49 +1041,45 @@ class _DiarioScreenState extends State<DiarioScreen> {
                 GestureDetector(
                   onTap: () => _confirmarEliminar(entrada, setModalState),
                   child: Container(
-                    padding: const EdgeInsets.all(4),
+                    padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color: Colors.red.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.delete_outline,
                       size: 16,
-                      color: Colors.red,
+                      color: Colors.red[400],
                     ),
                   ),
                 ),
               ],
             ),
-
             const SizedBox(height: 8),
-
-            // Estado de ánimo
             if (entrada.estadoAnimo != null)
               Container(
                 margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF6366F1).withOpacity(0.1),
+                  color: const Color(0xFFB2F5DB).withOpacity(0.3),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   entrada.estadoAnimo!,
-                  style: const TextStyle(
+                  style: GoogleFonts.inter(
                     fontSize: 11,
-                    color: Color(0xFF6366F1),
+                    color: const Color(0xFF2E7D32),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
-
-            // Título
             if (entrada.categoria != null && entrada.categoria!.isNotEmpty)
               Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 child: Text(
                   entrada.categoria!,
-                  style: const TextStyle(
+                  style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
@@ -723,11 +1088,9 @@ class _DiarioScreenState extends State<DiarioScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-
-            // Contenido preview
             Text(
               entrada.contenido,
-              style: const TextStyle(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 height: 1.4,
                 color: Colors.black87,
@@ -735,16 +1098,13 @@ class _DiarioScreenState extends State<DiarioScreen> {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-
             const SizedBox(height: 8),
-
-            // Indicador de "tap para ver más"
             Row(
               children: [
                 const Spacer(),
                 Text(
                   'Toca para ver completo',
-                  style: TextStyle(
+                  style: GoogleFonts.inter(
                     fontSize: 11,
                     color: Colors.grey[500],
                     fontStyle: FontStyle.italic,
@@ -803,16 +1163,18 @@ class _DiarioScreenState extends State<DiarioScreen> {
                         children: [
                           Text(
                             entrada.categoria ?? 'Sin título',
-                            style: const TextStyle(
+                            style: GoogleFonts.inter(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                               color: Colors.black87,
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
                           Text(
                             _formatDate(DateTime.parse(entrada.fecha)),
-                            style: const TextStyle(
+                            style: GoogleFonts.inter(
                               fontSize: 14,
                               color: Colors.grey,
                             ),
@@ -823,13 +1185,17 @@ class _DiarioScreenState extends State<DiarioScreen> {
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: Container(
-                        width: 32,
-                        height: 32,
+                        width: 40,
+                        height: 40,
                         decoration: BoxDecoration(
                           color: Colors.grey[100],
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.close, size: 18),
+                        child: Icon(
+                          Icons.close,
+                          size: 20,
+                          color: Colors.grey[600],
+                        ),
                       ),
                     ),
                   ],
@@ -848,10 +1214,13 @@ class _DiarioScreenState extends State<DiarioScreen> {
                         Container(
                           margin: const EdgeInsets.only(bottom: 20),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
+                              horizontal: 16, vertical: 10),
                           decoration: BoxDecoration(
-                            color:
-                                const Color(0xFF6366F1).withOpacity(0.1),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFB2F5DB), Color(0xFF86A8E7)],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            ),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(
@@ -859,15 +1228,15 @@ class _DiarioScreenState extends State<DiarioScreen> {
                             children: [
                               Text(
                                 _getEmojiForEstado(entrada.estadoAnimo!),
-                                style: const TextStyle(fontSize: 16),
+                                style: const TextStyle(fontSize: 18),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 10),
                               Text(
                                 entrada.estadoAnimo!,
-                                style: const TextStyle(
+                                style: GoogleFonts.inter(
                                   fontSize: 14,
-                                  color: Color(0xFF6366F1),
-                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
@@ -885,7 +1254,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
                         ),
                         child: Text(
                           entrada.contenido,
-                          style: const TextStyle(
+                          style: GoogleFonts.inter(
                             fontSize: 16,
                             height: 1.6,
                             color: Colors.black87,
@@ -893,38 +1262,47 @@ class _DiarioScreenState extends State<DiarioScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
 
-                      // Botón eliminar
-                      SizedBox(
+                      // Botón eliminar - MEJORADO
+                      Container(
                         width: double.infinity,
+                        height: 54,
                         child: ElevatedButton.icon(
                           onPressed: () {
                             Navigator.pop(context);
                             _confirmarEliminar(entrada);
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red[50],
+                            backgroundColor: Colors.white,
                             foregroundColor: Colors.red,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            elevation: 2,
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(color: Colors.red[200]!),
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(
+                                color: Colors.red.withOpacity(0.3),
+                                width: 1.5,
+                              ),
                             ),
                           ),
-                          icon: const Icon(Icons.delete_outline),
-                          label: const Text(
+                          icon: Icon(
+                            Icons.delete_outline_rounded,
+                            size: 22,
+                            color: Colors.red[600],
+                          ),
+                          label: Text(
                             'Eliminar entrada',
-                            style: TextStyle(
+                            style: GoogleFonts.inter(
                               fontSize: 16,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.red[600],
                             ),
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 30),
                     ],
                   ),
                 ),
@@ -939,35 +1317,137 @@ class _DiarioScreenState extends State<DiarioScreen> {
   void _confirmarEliminar(DiarioEntry entrada, [StateSetter? setModalState]) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => Dialog(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
         ),
-        title: const Text('Eliminar entrada'),
-        content: const Text(
-            '¿Estás seguro de que quieres eliminar esta entrada del diario? Esta acción no se puede deshacer.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _eliminarEntrada(entrada, setModalState);
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
-            child: const Text('Eliminar'),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icono de advertencia
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.warning_rounded,
+                  size: 32,
+                  color: Colors.red[600],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Título
+              Text(
+                'Eliminar entrada',
+                style: GoogleFonts.inter(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Mensaje
+              Text(
+                '¿Estás seguro de que quieres eliminar esta entrada del diario? Esta acción no se puede deshacer.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: Colors.grey[700],
+                  height: 1.4,
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Botones
+              Row(
+                children: [
+                  // Botón Cancelar
+                  Expanded(
+                    child: Container(
+                      height: 48,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.grey[700],
+                          side: BorderSide(
+                            color: Colors.grey[300]!,
+                            width: 1.5,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          'Cancelar',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  // Botón Eliminar
+                  Expanded(
+                    child: Container(
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _eliminarEntrada(entrada, setModalState);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red[600],
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          'Eliminar',
+                          style: GoogleFonts.inter(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
   Future<void> _eliminarEntrada(DiarioEntry entrada,
       [StateSetter? setModalState]) async {
+    // Mostrar modal de carga
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => _buildModalCarga(),
+    );
+
     // Eliminar inmediatamente de la lista visual (optimistic update)
     if (_entradasCache != null) {
       setState(() {
@@ -980,48 +1460,23 @@ class _DiarioScreenState extends State<DiarioScreen> {
       }
     }
 
-    // Mostrar indicador de carga
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(
-          children: [
-            SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            ),
-            SizedBox(width: 16),
-            Text('Eliminando entrada...'),
-          ],
-        ),
-        backgroundColor: Colors.orange,
-        duration: Duration(seconds: 1),
-      ),
-    );
-
     try {
       if (entrada.idDiario != null) {
         await _diarioService.eliminarEntrada(entrada.idDiario!);
 
         if (mounted) {
-          // Ocultar el snackbar de carga
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          // Cerrar modal de carga
+          Navigator.pop(context);
 
-          // Mostrar mensaje de éxito
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Entrada eliminada exitosamente'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
+          // Mostrar modal de éxito
+          _mostrarModalEliminacionExito();
         }
       }
     } catch (e) {
       if (mounted) {
+        // Cerrar modal de carga
+        Navigator.pop(context);
+
         // Si hay error, restaurar la entrada en la lista
         if (_entradasCache != null) {
           setState(() {
@@ -1035,67 +1490,244 @@ class _DiarioScreenState extends State<DiarioScreen> {
           }
         }
 
-        // Ocultar el snackbar de carga
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Error al eliminar: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        // Mostrar modal de error
+        _mostrarModalErrorEliminacion('Error al eliminar: $e');
       }
     }
   }
 
-  Future<void> _guardarEntrada() async {
-    setState(() {
-      _isLoading = true;
-    });
+  Widget _buildModalCarga() {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Spinner de carga
+            SizedBox(
+              width: 60,
+              height: 60,
+              child: CircularProgressIndicator(
+                strokeWidth: 4,
+                valueColor:
+                    const AlwaysStoppedAnimation<Color>(Color(0xFFFFA000)),
+                backgroundColor: const Color(0xFFFFA000).withOpacity(0.2),
+              ),
+            ),
 
-    try {
-      await _diarioService.crearEntrada(
-        contenido: _contenidoController.text.trim(),
-        categoria: _tituloController.text.trim(),
-        estadoAnimo: _estadoAnimoSeleccionado?.nombre,
-        valoracion: _estadoAnimoSeleccionado?.valor,
-      );
+            const SizedBox(height: 20),
 
-      // Limpiar campos
-      _contenidoController.clear();
-      _tituloController.clear();
-      _estadoAnimoSeleccionado = null;
+            // Texto de carga
+            Text(
+              'Eliminando entrada...',
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
 
-      // Limpiar cache para que se recargue con la nueva entrada
-      _entradasCache = null;
+            const SizedBox(height: 8),
 
-      // Mostrar mensaje de éxito
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('¡Tu día ha sido guardado en el diario! 📖✨'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 3),
+            Text(
+              'Por favor espera un momento',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _mostrarModalEliminacionExito() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
           ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al guardar: $e'),
-            backgroundColor: Colors.red,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icono de éxito
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4CAF50).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_circle_rounded,
+                  color: Color(0xFF4CAF50),
+                  size: 40,
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Título
+              Text(
+                '¡Eliminado!',
+                style: GoogleFonts.inter(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Mensaje
+              Text(
+                'La entrada ha sido eliminada exitosamente',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  color: Colors.grey[700],
+                  height: 1.4,
+                ),
+              ),
+
+              const SizedBox(height: 28),
+
+              // Botón de aceptar
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4CAF50),
+                    foregroundColor: Colors.white,
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(
+                    'Continuar',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
+        ),
+      ),
+    );
+  }
+
+  void _mostrarModalErrorEliminacion(String mensaje) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icono de error
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.error_outline_rounded,
+                  color: Colors.red[600],
+                  size: 40,
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Título
+              Text(
+                'Error al eliminar',
+                style: GoogleFonts.inter(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Mensaje de error
+              Text(
+                mensaje,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  color: Colors.grey[700],
+                  height: 1.4,
+                ),
+              ),
+
+              const SizedBox(height: 28),
+
+              // Botón de aceptar
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red[600],
+                    foregroundColor: Colors.white,
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(
+                    'Entendido',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // Helper method to safely format dates with fallback

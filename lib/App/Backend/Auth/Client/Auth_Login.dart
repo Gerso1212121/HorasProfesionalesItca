@@ -90,7 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordController.text.trim(),
       ); // Intentar iniciar sesión con Supabase
 
-      final SupabaseAuth.Session? session = res.session; // Obtener la sesión
+      final SupabaseAuth.Session? session = res.session;    
       final SupabaseAuth.User? user = res.user; // Obtener el usuario
 
       if (session != null && user != null) {

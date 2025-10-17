@@ -22,10 +22,13 @@ class EstadisticasRapidas extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.purple.shade50, Colors.indigo.shade50],
+          colors: [
+            const Color.fromARGB(255, 229, 243, 245),
+            const Color.fromARGB(255, 232, 244, 246)
+          ],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.purple.shade200),
+        border: Border.all(color: const Color.fromARGB(255, 147, 188, 216)),
       ),
       child: Row(
         children: [
@@ -126,7 +129,7 @@ class EstadisticasDetalladas extends StatelessWidget {
                     'Total Ejercicios',
                     estadisticas.totalEjerciciosRealizados.toString(),
                     Icons.fitness_center,
-                    Colors.purple,
+                    Color.fromARGB(255, 224, 136, 240),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -135,7 +138,7 @@ class EstadisticasDetalladas extends StatelessWidget {
                     'Promedio',
                     '${estadisticas.promedioCalificacion.toStringAsFixed(1)}/10',
                     Icons.star,
-                    Colors.amber,
+                    const Color.fromARGB(255, 247, 185, 0),
                   ),
                 ),
               ],
@@ -159,7 +162,7 @@ class EstadisticasDetalladas extends StatelessWidget {
                     'Tiempo Total',
                     '${estadisticas.minutosTotal} min',
                     Icons.access_time,
-                    Colors.blue,
+                    const Color.fromARGB(255, 62, 164, 247),
                   ),
                 ),
               ],
@@ -375,8 +378,7 @@ class EjercicioRecomendadoCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color:
-                            ejercicio.dificultad.color.withOpacity(0.2),
+                        color: ejercicio.dificultad.color.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -411,8 +413,7 @@ class EjercicioRecomendadoCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.blue.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border:
-                          Border.all(color: Colors.blue.withOpacity(0.2)),
+                      border: Border.all(color: Colors.blue.withOpacity(0.2)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -616,8 +617,7 @@ class EjercicioCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: ejercicio.dificultad.color
-                                .withOpacity(0.2),
+                            color: ejercicio.dificultad.color.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(

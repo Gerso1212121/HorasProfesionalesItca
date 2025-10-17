@@ -74,54 +74,186 @@ class _PerfilState extends State<Perfil> with SingleTickerProviderStateMixin {
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
+        return Dialog(
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(24),
           ),
-          title: Text(
-            '¿Cerrar Sesión?',
-            style: GoogleFonts.inter(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          content: Text(
-            '¿Estás seguro de que deseas cerrar tu sesión?',
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              color: Colors.black54,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text(
-                'Cancelar',
-                style: GoogleFonts.inter(
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
-                ),
+          elevation: 10,
+          child: Container(
+            padding: const EdgeInsets.all(17),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.white,
+                  const Color(0xFFF8F9FA),
+                ],
               ),
             ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFF66B7D),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icono de advertencia
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFFFF6B6B),
+                        const Color(0xFFF66B7D),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFF66B7D).withOpacity(0.3),
+                        blurRadius: 15,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.logout_rounded,
+                    color: Colors.white,
+                    size: 40,
+                  ),
                 ),
-              ),
-              child: Text(
-                'Cerrar Sesión',
-                style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w500,
+
+                const SizedBox(height: 20),
+
+                // Título
+                Text(
+                  '¿Cerrar Sesión?',
+                  style: GoogleFonts.inter(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                    height: 1.2,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-              ),
+
+                const SizedBox(height: 12),
+
+                // Descripción
+                Text(
+                  '¿Estás seguro de que deseas salir de tu cuenta? Podrás iniciar sesión nuevamente cuando lo desees.',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    color: Colors.black54,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 28),
+
+                // Botones en Row
+                Row(
+                  children: [
+                    // Botón Cancelar
+                    Expanded(
+                      child: Container(
+                        height: 52,
+                        margin: const EdgeInsets.only(right: 4),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFF86A8E7),
+                            width: 2,
+                          ),
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.white,
+                              const Color(0xFFF8F9FA),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: Text(
+                            'Cancelar',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF86A8E7),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Botón Cerrar Sesión
+                    Expanded(
+                      child: Container(
+                        height: 52,
+                        margin: const EdgeInsets.only(left: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFFFF6B6B),
+                              const Color(0xFFF66B7D),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFF66B7D).withOpacity(0.4),
+                              blurRadius: 15,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: Text(
+                            'Cerrar Sesión',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
         );
       },
     );
@@ -358,107 +490,116 @@ class _PerfilState extends State<Perfil> with SingleTickerProviderStateMixin {
                     ),
                   ),
                   const SizedBox(height: 20),
-
-                  // Botón de Citas
-                  Container(
-                    width: double.infinity,
-                    height: 56,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFF86A8E7),
-                          const Color(0xFF86A8E7).withOpacity(0.8),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF86A8E7).withOpacity(0.3),
-                          blurRadius: 15,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const CitasScreen(),
+                  // Contenedor para los botones en horizontal
+                  Row(
+                    children: [
+                      // Botón de Citas
+                      Expanded(
+                        child: Container(
+                          height: 56,
+                          margin: const EdgeInsets.only(
+                              right: 8), // Espacio entre botones
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFF86A8E7),
+                                const Color(0xFF86A8E7).withOpacity(0.8),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF86A8E7).withOpacity(0.3),
+                                blurRadius: 15,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
                           ),
-                        );
-                      },
-                      icon: const Icon(
-                        LucideIcons.calendar,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      label: Text(
-                        'Mis Citas',
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const CitasScreen(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(
+                              LucideIcons.calendar,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            label: Text(
+                              'Mis Citas',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                    ),
-                  ),
 
-                  // Botón de cerrar sesión
-                  Container(
-                    width: double.infinity,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFFF66B7D),
-                          const Color(0xFFF66B7D).withOpacity(0.8),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFF66B7D).withOpacity(0.3),
-                          blurRadius: 15,
-                          offset: const Offset(0, 8),
+                      // Botón de cerrar sesión
+                      Expanded(
+                        child: Container(
+                          height: 56,
+                          margin: const EdgeInsets.only(
+                              left: 0), // Espacio entre botones
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFFF66B7D),
+                                const Color(0xFFF66B7D).withOpacity(0.8),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFF66B7D).withOpacity(0.3),
+                                blurRadius: 15,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: ElevatedButton.icon(
+                            onPressed: _handleLogout,
+                            icon: const Icon(
+                              LucideIcons.logOut,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            label: Text(
+                              'Cerrar Sesión',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
-                    child: ElevatedButton.icon(
-                      onPressed: _handleLogout,
-                      icon: const Icon(
-                        LucideIcons.logOut,
-                        color: Colors.white,
-                        size: 20,
                       ),
-                      label: Text(
-                        'Cerrar Sesión',
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                    ),
+                    ],
                   ),
                   const SizedBox(height: 40),
                 ],

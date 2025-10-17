@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:table_calendar/table_calendar.dart';
-import '../Widgets/activity_card.dart';
+import '../Widgets/ACTIVITY_CARD.dart';
 import '../Widgets/lotus_assistant_bubble.dart';
 
 class DashboardScreen extends StatefulWidget {

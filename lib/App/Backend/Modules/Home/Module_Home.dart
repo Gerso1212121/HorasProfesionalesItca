@@ -1,15 +1,15 @@
 import 'package:ai_app_tests/App/Backend/Modules/Module_ChatIA.dart';
 import 'package:ai_app_tests/App/Backend/Modules/Home/Module_Diary.dart';
+import 'package:ai_app_tests/Frontend/Widgets/ACTIVIY_CARDCHAT.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../Data/DataBase/DatabaseHelper.dart';
-import '../../../../Frontend/Widgets/activity_card.dart';
+import '../../../../Frontend/Widgets/ACTIVITY_CARD.dart';
 import '../../../../Frontend/Widgets/CalendarWidget.dart';
 import '../../../../Frontend/Widgets/PsychologyCardWidget.dart';
-import '../../../../Frontend/Widgets/ModuloDetailScreen.dart';
+import '../../../../Frontend/Widgets/MODULODETAILSSCREEN.dart';
 import '../../../Services/SampleDataLoader.dart';
-import '../../../../Frontend/Widgets/AllModulesScreen.dart';
 import '../../../../Frontend/Screens/MetasAcademicasScreen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -291,7 +291,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   end: Alignment.topRight,
                 ),
                 borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(200),
+                  bottomLeft: Radius.circular(140),
                 ),
               ),
               padding: const EdgeInsets.only(top: 100, bottom: 24),
@@ -571,15 +571,26 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: ListView(
                       scrollDirection: Axis.horizontal,
                       children: const [
-                        ActivityCard(
-                          imagePath: 'assets/images/respiracion.jpg',
-                          title: 'Sesión de Chat AI',
-                          backgroundColor: Color(0xFFDBFFDD),
+                        ActivityChatCard(
+                          topic: 'Bienestar Emocional',
+                          summary:
+                              'Hablamos sobre el balance emocional y estrategias para mantener una mentalidad positiva en el día a día...',
+                          backgroundColor: Color(0xFFFFF2CC),
+                          emojiIcon: '😊',
                         ),
-                        ActivityCard(
-                          imagePath: 'assets/images/meditacion2.jpg',
-                          title: 'Conversación Anterior',
+                        ActivityChatCard(
+                          topic: 'Conversación Anterior',
+                          summary:
+                              'Discusión sobre prácticas de mindfulness y meditación guiada para mejorar la concentración y reducir la ansiedad...',
                           backgroundColor: Color(0xFFD0E5F8),
+                          customIcon: Icons.self_improvement_rounded,
+                        ),
+                        ActivityChatCard(
+                          topic: 'Metas Personales',
+                          summary:
+                              'Conversación acerca de establecer objetivos realistas y planificar pasos concretos para alcanzar tus metas...',
+                          backgroundColor: Color(0xFFE8D7FF),
+                          emojiIcon: '🎯',
                         ),
                       ],
                     ),

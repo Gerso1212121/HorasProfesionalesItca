@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'dart:developer' as developer;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /*----------|MODULOS|----------*/
 import '../../Data/Api/gptApi.dart';
@@ -14,15 +15,6 @@ import '../../Services/Service_TituloIA.dart';
 import '../../Utils/Utils_DebugHelper.dart';
 import '../../Utils/Utils_FirestorFix.dart';
 import 'Module_HistorialSesionesUsuario.dart';
-
-/*----------|SIN USO|----------*/
-//import '../../Services/titulo_dinamico_service.dart';
-//import '../../UI/Screens/configuracion_ia_screen.dart';
-//import '../../utils/solucion_rapida.dart';
-//import 'package:shared_preferences/shared_preferences.dart';
-//import 'dart:convert';
-// import '../../Data/models/analisis_emocional.dart'; // ELIMINADO - Análisis de emociones oculto
-//import '../../Data/database/DatabaseHelper.dart';
 
 // Widget de animación de puntos como ChatGPT
 class TypingIndicator extends StatefulWidget {
@@ -92,7 +84,7 @@ class _TypingIndicatorState extends State<TypingIndicator>
                   width: 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: Colors.grey[600],
+                    color: const Color(0xFF86A8E7),
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -106,8 +98,7 @@ class _TypingIndicatorState extends State<TypingIndicator>
 }
 
 class ChatAi extends StatefulWidget {
-  final SesionChat?
-      sesionAnterior; // Para retomar conversaciones desde historial
+  final SesionChat? sesionAnterior;
 
   const ChatAi({super.key, this.sesionAnterior});
 
@@ -121,8 +112,6 @@ class _ChatAiState extends State<ChatAi> {
   String? _uidUsuario;
   bool _sessionActive = false;
   final TextEditingController _controller = TextEditingController();
-  // Map<String, dynamic>? _perfilUsuario; // No se usa actualmente
-  // List<Map<String, dynamic>> _historialAnalisis = []; // ELIMINADO - Análisis de emociones oculto
   bool _esSesionContinuada = false;
 
   // Configuración personalizada de IA
@@ -172,7 +161,6 @@ class _ChatAiState extends State<ChatAi> {
     if (widget.sesionAnterior != null) {
       _cargarSesionAnterior();
     } else {
-      // SESIONES INDEPENDIENTES: Cada sesión es completamente nueva
       developer.log(
           '🆕 SESIÓN INDEPENDIENTE: Sin memoria de conversaciones previas');
     }
@@ -184,7 +172,6 @@ class _ChatAiState extends State<ChatAi> {
     try {
       await _librosService.cargarLibros();
 
-      // Siempre generar el prompt automáticamente para todos los usuarios
       _promptPersonalizado = _librosService.generarPromptPersonalizado(
           'Eres un asistente psicológico empático y profesional que:\n- Utiliza un tono cálido y comprensivo\n- Proporciona respuestas basadas en la psicología científica\n- Ofrece herramientas prácticas para el desarrollo emocional\n- Mantiene un enfoque ético y profesional\n- Adapta su comunicación según las necesidades del usuario\n- Utiliza la base de conocimiento de libros de psicología para fundamentar sus respuestas',
           '1. Siempre prioriza el bienestar emocional del usuario\n2. No proporcionar diagnósticos médicos o psicológicos\n3. Recomendar buscar ayuda profesional cuando sea necesario\n4. Mantener confidencialidad y respeto\n5. Usar lenguaje claro y accesible\n6. Basar respuestas en evidencia científica de los libros de psicología\n7. Fomentar la autoconciencia y el desarrollo personal\n8. Utilizar conceptos de inteligencia emocional de Daniel Goleman\n9. Referenciar técnicas psicológicas cuando sea apropiado');
@@ -195,8 +182,6 @@ class _ChatAiState extends State<ChatAi> {
 
       developer
           .log('✅ Configuración automática cargada para todos los usuarios');
-      developer.log('📚 Libros cargados: ${_librosService.libros.length}');
-      developer.log('🤖 Prompt generado automáticamente');
     } catch (e) {
       developer.log('⚠️ Error cargando configuración automática: $e');
     }
@@ -205,13 +190,10 @@ class _ChatAiState extends State<ChatAi> {
   Future<void> _cargarSesionAnterior() async {
     developer.log('🔄 CARGANDO SESIÓN ANTERIOR DESDE HISTORIAL...');
     developer.log(
-      '📝 Mensajes en sesión anterior: ${widget.sesionAnterior!.mensajes.length}',
-    );
+        '📝 Mensajes en sesión anterior: ${widget.sesionAnterior!.mensajes.length}');
 
-    // DESCIFRADO FORZADO: Usar el método forzado que descifra TODO
     final mensajesParaDescifrar = widget.sesionAnterior!.mensajes.map((m) {
       final mensajeJson = m.toJson();
-      // NO marcar como cifrado - usar el método forzado que descifra TODO
       return mensajeJson;
     }).toList();
 
@@ -230,58 +212,34 @@ class _ChatAiState extends State<ChatAi> {
       _esSesionContinuada = true;
     });
 
-    // Auto-scroll al final después de cargar mensajes anteriores
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
     });
 
     developer.log('✅ SESIÓN ANTERIOR CARGADA: ${_messages.length} mensajes');
-    developer.log('🔄 Estado de sesión continuada: $_esSesionContinuada');
-    developer.log('🔐 Mensajes descifrados correctamente');
   }
 
   Future<void> _cargarPerfilUsuario() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       _uidUsuario = user.uid;
-
-      try {
-        //final dbHelper = DatabaseHelper.instance;
-        // _perfilUsuario = await dbHelper.getEstudiantePorUID(user.uid);
-        // _historialAnalisis = await dbHelper.getAnalisisPorUsuario(user.uid); // ELIMINADO - Análisis oculto
-      } catch (e) {
-        // Si hay error con la base de datos (como en web), usar lista vacía
-        developer.log('⚠️ Error cargando perfil: $e');
-      }
-
-      // ESTANDARIZAR: Usar siempre el email como identificador principal
       _usuario = user.email ?? "Usuario";
-
       developer.log('👤 USUARIO CARGADO: $_usuario');
-      developer.log('📧 EMAIL: ${user.email}');
-      developer.log('🆔 UID: ${user.uid}');
-      developer.log('🔒 ANÁLISIS DE EMOCIONES: OCULTO');
     }
   }
 
   Future<void> _startSession() async {
     setState(() {
       _sessionActive = true;
-      // ESTANDARIZAR: Usar siempre el email
       _usuario = FirebaseAuth.instance.currentUser?.email ?? "Usuario";
     });
 
     developer.log('🚀 SESIÓN INICIADA PARA: $_usuario');
-
-    // SESIONES INDEPENDIENTES: No hay memoria de conversaciones anteriores
     developer
         .log('🆕 SESIÓN INDEPENDIENTE: Sin memoria de conversaciones previas');
   }
 
-  // MÉTODOS DE ANÁLISIS DE EMOCIONES ELIMINADOS - SESIONES INDEPENDIENTES
-
   void _addMessage(String text) async {
-    // Bloquear envío si la IA está pensando
     if (_isThinking) {
       developer
           .log('🚫 Bloqueado: IA está pensando, no se puede enviar mensaje');
@@ -290,7 +248,6 @@ class _ChatAiState extends State<ChatAi> {
 
     developer.log('💬 NUEVO MENSAJE DEL USUARIO: $text');
 
-    // Activar estado de pensamiento
     setState(() {
       _isThinking = true;
     });
@@ -305,13 +262,12 @@ class _ChatAiState extends State<ChatAi> {
       _messages.add(userMsg);
     });
 
-    // Auto-scroll al final después de agregar mensaje del usuario
     _scrollToBottom();
 
     // Mostrar indicador de carga con animación
     final loadingMsg = Mensaje(
       emisor: "Asistente",
-      contenido: "TYPING_INDICATOR", // Marcador especial para la animación
+      contenido: "TYPING_INDICATOR",
       fecha: DateTime.now().toIso8601String(),
     );
 
@@ -319,27 +275,24 @@ class _ChatAiState extends State<ChatAi> {
       _messages.add(loadingMsg);
     });
 
-    // Auto-scroll al final después de agregar indicador de carga
     _scrollToBottom();
 
-    // Crear el historial de mensajes para enviar a GPT (incluyendo contexto)
+    // Crear el historial de mensajes para enviar a GPT
     List<Map<String, String>> messagesForGpt = [];
 
-    // Agregar prompt automático como primer mensaje del sistema (siempre activo)
+    // Agregar prompt automático como primer mensaje del sistema
     if (_configuracionCargada && _promptPersonalizado.isNotEmpty) {
       messagesForGpt.add({"role": "system", "content": _promptPersonalizado});
       developer.log('🤖 Prompt automático incluido en la conversación');
-    } else {
-      developer.log('⚠️ Prompt automático no disponible aún');
     }
 
-    // Agregar mensajes de la conversación (excluyendo el mensaje de carga)
+    // Agregar mensajes de la conversación
     for (var msg in _messages.where((m) => m.contenido != "TYPING_INDICATOR")) {
       String role;
       if (msg.emisor == "Usuario") {
         role = "user";
       } else if (msg.emisor == "Sistema") {
-        role = "system"; // Contexto psicológico
+        role = "system";
       } else {
         role = "assistant";
       }
@@ -347,12 +300,9 @@ class _ChatAiState extends State<ChatAi> {
       messagesForGpt.add({"role": role, "content": msg.contenido});
     }
 
-    developer.log(
-      '🤖 ENVIANDO A GPT: ${messagesForGpt.length} mensajes (incluye prompt personalizado)',
-    );
+    developer.log('🤖 ENVIANDO A GPT: ${messagesForGpt.length} mensajes');
 
     try {
-      // Reintentos para asegurar respuesta
       int intentos = 0;
       const maxIntentos = 3;
       String? respuesta;
@@ -368,39 +318,32 @@ class _ChatAiState extends State<ChatAi> {
         } catch (e) {
           developer.log('❌ Error en intento $intentos: $e');
           if (intentos >= maxIntentos) {
-            rethrow; // Re-lanzar el error si se agotaron los intentos
+            rethrow;
           }
-          // Esperar antes del siguiente intento
           await Future.delayed(Duration(seconds: intentos));
         }
       }
 
-      // Remover mensaje de carga y agregar respuesta real
       setState(() {
-        _messages.removeLast(); // Remover "TYPING_INDICATOR"
-
+        _messages.removeLast();
         final gptMsg = Mensaje(
           emisor: "Asistente",
           contenido: respuesta?.trim() ??
               "Lo siento, no pude procesar tu mensaje. Inténtalo de nuevo.",
           fecha: DateTime.now().toIso8601String(),
         );
-
         _messages.add(gptMsg);
       });
 
-      // Auto-scroll al final después de agregar respuesta de GPT
       _scrollToBottom();
     } catch (e) {
       developer.log('❌ ERROR GPT: $e');
 
-      // Remover mensaje de carga
       setState(() {
-        _messages.removeLast(); // Remover "TYPING_INDICATOR"
+        _messages.removeLast();
       });
 
       String errorMessage = "⚠️ Error al conectar con el asistente. ";
-
       if (e.toString().contains('permission-denied') ||
           e.toString().contains('PERMISSION_DENIED')) {
         errorMessage += "Problema de permisos en Firestore.";
@@ -422,10 +365,8 @@ class _ChatAiState extends State<ChatAi> {
         _messages.add(errorMsg);
       });
 
-      // Auto-scroll al final después de agregar mensaje de error
       _scrollToBottom();
     } finally {
-      // Resetear estado de pensamiento
       setState(() {
         _isThinking = false;
       });
@@ -435,7 +376,6 @@ class _ChatAiState extends State<ChatAi> {
   bool _isEndingSession = false;
 
   Future<void> _endSession() async {
-    // Protección contra llamadas duplicadas
     if (_isEndingSession) {
       developer.log(
           '⚠️ _endSession ya está en ejecución, ignorando llamada duplicada');
@@ -454,17 +394,13 @@ class _ChatAiState extends State<ChatAi> {
     try {
       developer.log('🔄 FINALIZANDO SESIÓN...');
 
-      // Generar título con IA solo al cerrar sesión
       final tituloDinamico =
           await TituloIAService.generarTituloConIA(_messages);
       developer.log('🤖 Título generado por IA al cerrar: $tituloDinamico');
 
-      // Manejar sesiones continuadas vs nuevas
       if (_esSesionContinuada && widget.sesionAnterior != null) {
-        // Actualizar la sesión existente con el nuevo título
         await _actualizarSesionExistenteConTitulo(tituloDinamico);
       } else {
-        // Crear nueva sesión con el título generado
         await _crearNuevaSesionConTitulo(tituloDinamico);
       }
 
@@ -485,7 +421,6 @@ class _ChatAiState extends State<ChatAi> {
     } catch (e) {
       developer.log('❌ ERROR AL PROCESAR SESIÓN: $e');
 
-      // Manejar específicamente errores de permisos de Firestore
       String errorMessage = 'Error al guardar sesión';
       if (e.toString().contains('permission-denied') ||
           e.toString().contains('permissions')) {
@@ -511,18 +446,14 @@ class _ChatAiState extends State<ChatAi> {
         );
       }
     } finally {
-      // Reset del flag de protección
       _isEndingSession = false;
     }
   }
-
-  // MÉTODO ELIMINADO - USAR _actualizarSesionExistenteConTitulo EN SU LUGAR
 
   Future<void> _actualizarSesionExistenteConTitulo(
       String tituloDinamico) async {
     developer.log('🔄 ACTUALIZANDO SESIÓN EXISTENTE CON TÍTULO...');
 
-    // Cifrar mensajes antes de guardar
     final mensajesCifrados = await CifradoService.cifrarMensajes(
       _messages.map((m) => m.toJson()).toList(),
     );
@@ -539,18 +470,12 @@ class _ChatAiState extends State<ChatAi> {
     await FirebaseChatStorage.deleteSesionChat(widget.sesionAnterior!.fecha);
     await FirebaseChatStorage.saveSesionChat(sesionActualizada);
 
-    // ANÁLISIS DE EMOCIONES ELIMINADO - SESIONES INDEPENDIENTES
-    developer.log('🔒 ANÁLISIS DE EMOCIONES: OCULTO');
     developer.log('🔐 Mensajes cifrados antes de guardar');
     developer.log('🤖 Título actualizado: $tituloDinamico');
-
     developer.log('✅ SESIÓN ACTUALIZADA CORRECTAMENTE');
   }
 
-  // MÉTODO ELIMINADO - USAR _crearNuevaSesionConTitulo EN SU LUGAR
-
   Future<void> _crearNuevaSesionConTitulo(String tituloDinamico) async {
-    // Cifrar mensajes antes de guardar
     final mensajesCifrados = await CifradoService.cifrarMensajes(
       _messages.map((m) => m.toJson()).toList(),
     );
@@ -566,11 +491,8 @@ class _ChatAiState extends State<ChatAi> {
 
     await FirebaseChatStorage.saveSesionChat(sesionChat);
 
-    // ANÁLISIS DE EMOCIONES ELIMINADO - SESIONES INDEPENDIENTES
-    developer.log('🔒 ANÁLISIS DE EMOCIONES: OCULTO');
     developer.log('🔐 Mensajes cifrados antes de guardar');
     developer.log('🤖 Título generado por IA: $tituloDinamico');
-
     developer.log('✅ NUEVA SESIÓN CREADA Y ANALIZADA');
   }
 
@@ -582,10 +504,7 @@ class _ChatAiState extends State<ChatAi> {
 
     if (mensajesUsuario.isEmpty) return "Sesión sin mensajes";
 
-    // Tomar el primer mensaje del usuario como base para el título
     String primerMensaje = mensajesUsuario.first;
-
-    // Si es muy largo, cortarlo y agregar puntos suspensivos
     if (primerMensaje.length > 50) {
       return "${primerMensaje.substring(0, 50)}...";
     }
@@ -601,7 +520,6 @@ class _ChatAiState extends State<ChatAi> {
 
     List<String> etiquetas = [];
 
-    // Emociones
     if (contenido.contains(RegExp(r'\b(triste|deprim|llor|melanc)\b'))) {
       etiquetas.add("😢 Tristeza");
     }
@@ -615,26 +533,7 @@ class _ChatAiState extends State<ChatAi> {
       etiquetas.add("😊 Alegría");
     }
 
-    // Temas
-    if (contenido.contains(RegExp(r'\b(exam|estudi|univers|tarea|clase)\b'))) {
-      etiquetas.add("📚 Académico");
-    }
-    if (contenido.contains(
-      RegExp(r'\b(familia|padres|hermano|casa|hogar)\b'),
-    )) {
-      etiquetas.add("👨‍👩‍👧‍👦 Familia");
-    }
-    if (contenido.contains(RegExp(r'\b(pareja|novio|novia|amor|relación)\b'))) {
-      etiquetas.add("💕 Relaciones");
-    }
-    if (contenido.contains(RegExp(r'\b(trabajo|empleo|jefe|oficina)\b'))) {
-      etiquetas.add("💼 Laboral");
-    }
-    if (contenido.contains(RegExp(r'\b(enferm|dolor|médico|salud)\b'))) {
-      etiquetas.add("🏥 Salud");
-    }
-
-    return etiquetas.take(3).toList(); // Máximo 3 etiquetas
+    return etiquetas.take(3).toList();
   }
 
   @override
@@ -644,153 +543,497 @@ class _ChatAiState extends State<ChatAi> {
     super.dispose();
   }
 
+  // NUEVO DISEÑO APLICADO CON BOTÓN DE HISTORIAL EN SUPERIOR IZQUIERDA
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Asistente AI"),
-        actions: [
-          // Solo botones esenciales para el usuario
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      HistorialSesionesUsuario(uidUsuario: _uidUsuario),
-                ),
-              );
-            },
-            tooltip: "Ver historial de chats",
-          ),
-          if (_sessionActive)
-            IconButton(
-              icon: const Icon(Icons.stop),
-              onPressed: _endSession,
-              tooltip: "Terminar sesión",
-            ),
-        ],
-      ),
+      backgroundColor: const Color(0xFFF2FFFF),
       body: Column(
         children: [
-          Expanded(
-            child: _messages.isEmpty
-                ? const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.chat_bubble_outline,
-                          size: 64,
-                          color: Colors.grey,
-                        ),
-                        SizedBox(height: 16),
-                        Text('Inicia una sesión para comenzar a chatear'),
-                      ],
+          // Header con gradiente (inspirado en HomeScreen)
+          Container(
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFFB2F5DB), Color(0xFF86A8E7)],
+                begin: Alignment.bottomLeft,
+                end: Alignment.topRight,
+              ),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
+              ),
+            ),
+            padding:
+                const EdgeInsets.only(top: 60, bottom: 20, left: 16, right: 16),
+            child: Column(
+              children: [
+                // Fila superior con flecha y título
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // 🔙 Botón de retroceso
+                    IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: Colors.black87,
+                        size: 22,
+                      ),
+                      onPressed: () => Navigator.pop(context),
                     ),
-                  )
-                : ListView.builder(
-                    controller: _scrollController,
-                    itemCount: _messages
-                        .where(
-                          (m) =>
-                              m.emisor != "Sistema" ||
-                              m.contenido.startsWith("⚠️"),
-                        )
-                        .length,
-                    itemBuilder: (context, index) {
-                      final mensajesVisibles = _messages
-                          .where(
-                            (m) =>
-                                m.emisor != "Sistema" ||
-                                m.contenido.startsWith("⚠️"),
-                          )
-                          .toList();
-                      final msg = mensajesVisibles[index];
-                      final isUser = msg.emisor == "Usuario";
 
-                      return Container(
-                        margin: const EdgeInsets.symmetric(
-                          vertical: 4,
-                          horizontal: 8,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: isUser
-                              ? MainAxisAlignment.end
-                              : MainAxisAlignment.start,
-                          children: [
-                            Flexible(
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: isUser
-                                      ? Colors.blue[100]
-                                      : Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(12),
+                    // Título centrado
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            "Asistente AI",
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "Tu compañero emocional",
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Espacio para balancear la flecha
+                    const SizedBox(width: 48),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // Botón de historial centrado
+                Center(child: _buildHistorialSlideButton()),
+
+                const SizedBox(height: 12),
+
+                // Fila con indicador de sesión y botón terminar
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: _sessionActive
+                                ? const Color(0xFF4CAF50)
+                                : const Color(0xFFF66B7D),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                _sessionActive
+                                    ? Icons.chat
+                                    : Icons.chat_bubble_outline,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  _sessionActive ? "Activo" : "Inactivo",
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.inter(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (_sessionActive) ...[
+                        const SizedBox(width: 12),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.15),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                            border: Border.all(
+                              color: const Color(0xFFF66B7D).withOpacity(0.3),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: _endSession,
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text(
-                                      msg.emisor,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
+                                    const Icon(
+                                      Icons.stop,
+                                      color: Color(0xFFF66B7D),
+                                      size: 18,
                                     ),
-                                    const SizedBox(height: 4),
-                                    // Mostrar animación de puntos si es el indicador de carga
-                                    msg.contenido == "TYPING_INDICATOR"
-                                        ? const TypingIndicator()
-                                        : Text(msg.contenido),
-                                    const SizedBox(height: 4),
+                                    const SizedBox(width: 6),
                                     Text(
-                                      _formatTime(msg.fecha),
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: Colors.grey[600],
+                                      "Terminar",
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFFF66B7D),
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
                             ),
-                          ],
+                          ),
                         ),
-                      );
-                    },
+                      ],
+                    ],
                   ),
+                ),
+              ],
+            ),
           ),
-          if (_sessionActive)
+          // Área de mensajes
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return _messages.isEmpty
+                    ? SingleChildScrollView(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
+                          ),
+                          child: Center(
+                            child: _buildEmptyState(),
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _messages
+                            .where((m) =>
+                                m.emisor != "Sistema" ||
+                                m.contenido.startsWith("⚠️"))
+                            .length,
+                        itemBuilder: (context, index) {
+                          final mensajesVisibles = _messages
+                              .where((m) =>
+                                  m.emisor != "Sistema" ||
+                                  m.contenido.startsWith("⚠️"))
+                              .toList();
+                          final msg = mensajesVisibles[index];
+                          final isUser = msg.emisor == "Usuario";
+
+                          return _buildMessageBubble(msg, isUser);
+                        },
+                      );
+              },
+            ),
+          ),
+
+          // Área de entrada (footer)
+          if (_sessionActive) _buildInputArea(),
+          if (!_sessionActive) _buildStartSessionButton(),
+        ],
+      ),
+    );
+  }
+
+  // Nuevo widget para el botón de historial con efecto slide
+  Widget _buildHistorialSlideButton() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(25),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(
+          color: const Color(0xFFF66B7D).withOpacity(0.3),
+          width: 1.5,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    HistorialSesionesUsuario(uidUsuario: _uidUsuario),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(25),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.history,
+                  color: Color(0xFFF66B7D),
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  "Historial",
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFFF66B7D),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFFF2FFFF).withOpacity(0.5),
+            Color(0xFFE8F5E8).withOpacity(0.3),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Icono decorativo
             Container(
-              padding: const EdgeInsets.all(8.0),
+              width: 160,
+              height: 120,
               decoration: BoxDecoration(
-                color: Colors.grey[100],
-                border: Border(top: BorderSide(color: Colors.grey[300]!)),
+                color: Colors.white.withOpacity(0.8),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.psychology_outlined,
+                  size: 50,
+                  color: Color(0xFF86A8E7),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Inicia una conversación',
+              style: GoogleFonts.inter(
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: Text(
+                'Comparte tus pensamientos, preocupaciones o simplemente inicia una conversación. Estoy aquí para escucharte.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: Colors.black54,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMessageBubble(Mensaje msg, bool isUser) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment:
+            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!isUser)
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: Color(0xFF86A8E7),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.psychology_outlined,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+          if (!isUser) const SizedBox(width: 8),
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: isUser ? Color(0xFF86A8E7) : Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+                border: isUser ? null : Border.all(color: Color(0xFFE0E0E0)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Nombre del emisor
+                  Text(
+                    isUser ? "Tú" : "Asistente",
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isUser ? Colors.white70 : Color(0xFF666666),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  // Contenido del mensaje
+                  msg.contenido == "TYPING_INDICATOR"
+                      ? const TypingIndicator()
+                      : Text(
+                          msg.contenido,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: isUser ? Colors.white : Colors.black87,
+                            height: 1.4,
+                          ),
+                        ),
+                  const SizedBox(height: 6),
+                  // Hora
+                  Text(
+                    _formatTime(msg.fecha),
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      color: isUser ? Colors.white70 : Color(0xFF999999),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (isUser) const SizedBox(width: 8),
+          if (isUser)
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: Color(0xFFF66B7D),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.person,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInputArea() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(color: Color(0xFFE0E0E0)),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Color(0xFFF8F9FA),
+                borderRadius: BorderRadius.circular(25),
+                border: Border.all(color: Color(0xFFE0E0E0)),
               ),
               child: Row(
                 children: [
                   Expanded(
                     child: TextField(
                       controller: _controller,
-                      enabled:
-                          true, // Siempre habilitado para mantener el teclado
+                      enabled: !_isThinking,
                       decoration: InputDecoration(
                         hintText: _isThinking
-                            ? "Esperando respuesta..."
+                            ? "El asistente está escribiendo..."
                             : "Escribe tu mensaje...",
-                        border: const OutlineInputBorder(),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+                        hintStyle: GoogleFonts.inter(
+                          color: Colors.grey,
                         ),
-                        // Cambiar color cuando está bloqueado pero mantener funcional
-                        filled: _isThinking,
-                        fillColor: _isThinking ? Colors.grey[100] : null,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                       ),
-                      maxLines: 3, // Limitar a 3 líneas máximo
-                      minLines: 1, // Mínimo 1 línea
+                      maxLines: 3,
+                      minLines: 1,
+                      style: GoogleFonts.inter(fontSize: 14),
                       onSubmitted: (text) {
                         if (text.trim().isNotEmpty && !_isThinking) {
                           _addMessage(text.trim());
@@ -799,43 +1042,84 @@ class _ChatAiState extends State<ChatAi> {
                       },
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: _isThinking
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.send),
-                    onPressed: _isThinking
-                        ? null
-                        : () {
-                            if (_controller.text.trim().isNotEmpty) {
-                              _addMessage(_controller.text.trim());
-                              _controller.clear();
-                            }
-                          },
-                  ),
+                  if (_isThinking)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Color(0xFF86A8E7)),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
-          if (!_sessionActive)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _startSession,
-                  icon: const Icon(Icons.chat),
-                  label: const Text("Iniciar nueva sesión de chat"),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: _isThinking
+                    ? [Colors.grey, Colors.grey]
+                    : [Color(0xFFF66B7D), Color(0xFF86A8E7)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
+              shape: BoxShape.circle,
             ),
+            child: IconButton(
+              icon: Icon(Icons.send, color: Colors.white),
+              onPressed: _isThinking
+                  ? null
+                  : () {
+                      if (_controller.text.trim().isNotEmpty) {
+                        _addMessage(_controller.text.trim());
+                        _controller.clear();
+                      }
+                    },
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildStartSessionButton() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(color: Color(0xFFE0E0E0)),
+        ),
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: _startSession,
+          icon: Icon(Icons.chat_bubble, color: Colors.white),
+          label: Text(
+            "Iniciar nueva sesión de chat",
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Color(0xFFF66B7D),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+            elevation: 4,
+            shadowColor: Color(0xFFF66B7D).withOpacity(0.3),
+          ),
+        ),
       ),
     );
   }
@@ -847,63 +1131,5 @@ class _ChatAiState extends State<ChatAi> {
     } catch (e) {
       return fecha;
     }
-  }
-
-  void _debugInfo() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Debug Info'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Usuario: $_usuario'),
-              Text('UID: $_uidUsuario'),
-              Text('Sesión activa: $_sessionActive'),
-              Text('Mensajes: ${_messages.length}'),
-              Text('🔒 Análisis de emociones: OCULTO'),
-              const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () async {
-                  try {
-                    final sesiones =
-                        await FirebaseChatStorage.getSesionesChat();
-                    developer.log(
-                        '🔍 Debug: ${sesiones.length} sesiones encontradas');
-                    for (int i = 0; i < sesiones.length; i++) {
-                      developer.log(
-                          '📝 Sesión $i: ${sesiones[i].fecha} - ${sesiones[i].resumen}');
-                    }
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Text(
-                                'Debug: ${sesiones.length} sesiones encontradas')),
-                      );
-                    }
-                  } catch (e) {
-                    developer.log('❌ Error en debug: $e');
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error en debug: $e')),
-                      );
-                    }
-                  }
-                },
-                child: const Text('🔍 Ver sesiones guardadas'),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cerrar'),
-          ),
-        ],
-      ),
-    );
   }
 }

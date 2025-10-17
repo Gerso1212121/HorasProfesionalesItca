@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:ai_app_tests/App/Data/Models/ejercicio_model.dart';
 import 'package:ai_app_tests/App/Services/Services_Ejercicios.dart';
 import 'package:ai_app_tests/App/Services/Service_AnalisisEjercicio.dart';
-import 'package:ai_app_tests/Frontend/Widgets/ejercicios_widgets.dart';
+import 'package:ai_app_tests/Frontend/Widgets/EJERCICIOS_WIDGET.dart';
 import '../../App/Services/Logs/Services_Log.dart';
 import '../../App/Data/DataBase/DatabaseHelper.dart';
 
@@ -95,7 +95,7 @@ class _EjerciciosScreenState extends State<EjerciciosScreen>
                     expandedHeight: 100,
                     floating: false,
                     pinned: true,
-                    backgroundColor: Colors.deepPurple,
+                    backgroundColor: const Color(0xFF86A8E7),
                     title: const Text(
                       'EJERCICIOS DE BIENESTAR',
                       style: TextStyle(
@@ -112,9 +112,9 @@ class _EjerciciosScreenState extends State<EjerciciosScreen>
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              Colors.deepPurple,
-                              Colors.purple,
-                              Colors.purpleAccent,
+                              Color(0xFFB2F5DB),
+                              Color.fromARGB(255, 134, 212, 231),
+                              Color(0xFF86A8E7),
                             ],
                           ),
                         ),
@@ -195,8 +195,8 @@ class _EjerciciosScreenState extends State<EjerciciosScreen>
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.deepPurple, Colors.purple],
+              gradient: const LinearGradient(
+                colors: [Color(0xFF86A8E7), Color(0xFFB2F5DB)],
               ),
               borderRadius: BorderRadius.circular(30),
             ),
@@ -866,12 +866,13 @@ class _EjercicioEnProgresoScreenState extends State<EjercicioEnProgresoScreen>
     // Mostrar diálogo de finalización
     final resultado = await showDialog<Map<String, dynamic>>(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (context) =>
           EjercicioCompletadoDialog(ejercicio: widget.ejercicio),
     );
 
     if (resultado != null) {
+      // Usuario presionó "Guardar"
       try {
         await _ejerciciosService.registrarProgreso(
           idEjercicio: widget.ejercicio.id!,
@@ -882,7 +883,6 @@ class _EjercicioEnProgresoScreenState extends State<EjercicioEnProgresoScreen>
           emocion: resultado['emocion'],
         );
 
-        // Mostrar la emoción detectada si existe
         if (resultado['emocion'] != null) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -897,7 +897,7 @@ class _EjercicioEnProgresoScreenState extends State<EjercicioEnProgresoScreen>
         }
 
         if (mounted) {
-          Navigator.pop(context, true); // Indicar que se completó
+          Navigator.pop(context, true); // Volver a pantalla anterior
         }
       } catch (e) {
         if (mounted) {
@@ -908,6 +908,11 @@ class _EjercicioEnProgresoScreenState extends State<EjercicioEnProgresoScreen>
             ),
           );
         }
+      }
+    } else {
+      // Usuario presionó "Cancelar" o tocó fuera - SALIR SIN GUARDAR
+      if (mounted) {
+        Navigator.pop(context); // Cerrar completamente la pantalla de ejercicio
       }
     }
   }
@@ -1169,16 +1174,13 @@ class _EjercicioCompletadoDialogState extends State<EjercicioCompletadoDialog> {
 
   /// Analiza la emoción basada en los datos del ejercicio
   Future<void> _analizarEmocion() async {
-    // Evitar múltiples análisis simultáneos
     if (_isAnalizando) return;
 
-    // Limpiar estado previo
     setState(() {
       _isAnalizando = true;
       _emocionDetectada = '';
     });
 
-    // Llamar al servicio de análisis emocional
     try {
       final emocion = await AnalisisEjercicioService.analizarEmocionEjercicio(
           ejercicio: widget.ejercicio,
@@ -1188,7 +1190,6 @@ class _EjercicioCompletadoDialogState extends State<EjercicioCompletadoDialog> {
               : _notasController.text.trim(),
           uid: FirebaseAuth.instance.currentUser?.uid);
 
-      // Actualizar el estado con la emoción detectada
       if (mounted) {
         setState(() {
           _emocionDetectada = emocion;
@@ -1240,7 +1241,6 @@ class _EjercicioCompletadoDialogState extends State<EjercicioCompletadoDialog> {
               ),
             ),
             const SizedBox(height: 12),
-            // Usar Wrap para evitar overflow de los números
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -1302,8 +1302,6 @@ class _EjercicioCompletadoDialogState extends State<EjercicioCompletadoDialog> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Sección de análisis emocional
             if (_emocionDetectada.isNotEmpty)
               Container(
                 padding: const EdgeInsets.all(12),
@@ -1341,7 +1339,6 @@ class _EjercicioCompletadoDialogState extends State<EjercicioCompletadoDialog> {
                   ],
                 ),
               ),
-
             if (_emocionDetectada.isEmpty)
               ElevatedButton.icon(
                 onPressed: _isAnalizando ? null : _analizarEmocion,
@@ -1364,12 +1361,12 @@ class _EjercicioCompletadoDialogState extends State<EjercicioCompletadoDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.of(context).pop(), // Esto devuelve null
           child: const Text('Cancelar'),
         ),
         ElevatedButton(
           onPressed: () {
-            Navigator.pop(context, {
+            Navigator.of(context).pop({
               'puntuacion': _puntuacion,
               'notas': _notasController.text.trim().isEmpty
                   ? null

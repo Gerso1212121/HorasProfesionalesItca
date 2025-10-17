@@ -1,8 +1,12 @@
 /*----------|IMPORTACIONES FLUTTER|----------*/
 import 'dart:io';
 
+import 'package:ai_app_tests/App/Backend/Auth/Client/Auth_Unifiqued.dart';
 import 'package:ai_app_tests/App/Backend/Modules/Home/Module_Diary.dart';
 import 'package:ai_app_tests/App/Backend/Modules/Home/Module_Home.dart';
+import 'package:ai_app_tests/App/Backend/Modules/Module_HistorialSesiones.dart';
+import 'package:ai_app_tests/App/Backend/Modules/Module_HistorialSesionesUsuario.dart';
+import 'package:ai_app_tests/App/Backend/Modules/Module_ChatIA.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -17,7 +21,7 @@ import 'package:firebase_core/firebase_core.dart';
 /*----------|IMPORTACIONES MODULOS|----------*/
 import 'App/Backend/Auth/Client/Auth_Login.dart';
 import 'App/Backend/Dashboard->FRONTEND.dart';
-import 'Frontend/Screens/auth/welcome_screen.dart';
+import 'App/Backend/Auth/Client/AUTH_WELCOMESCREEN.dart';
 
 /*----------|IMPORTACIONES OTROS|----------*/
 import 'App/Data/DataBase/DatabaseHelper.dart';
@@ -126,7 +130,7 @@ class SplashScreen extends StatelessWidget {
           if (sesionActiva) {
             return const Dashboard();
           } else {
-            return const LoginScreen();
+            return const AuthUnifiedScreen();
           }
         }
       },
