@@ -1,6 +1,8 @@
 /*----------|IMPORTACIONES FLUTTER|----------*/
 import 'dart:io';
 
+import 'package:ai_app_tests/App/Backend/Modules/Home/Module_Diary.dart';
+import 'package:ai_app_tests/App/Backend/Modules/Home/Module_Home.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -147,3 +149,4 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+//SplashScreen

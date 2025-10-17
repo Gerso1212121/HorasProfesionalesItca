@@ -1,7 +1,7 @@
-import 'package:ai_app_tests/Frontend/Screens/ejercicios_screen.dart';
+import 'package:ai_app_tests/Frontend/Screens/EJERCICIOS_REFACTOR.dart';
 import 'package:flutter/material.dart';
 
-import '../../Data/DataBase/DatabaseHelper.dart';
+import '../../../Data/DataBase/DatabaseHelper.dart';
 
 class Ejercicios extends StatelessWidget {
   const Ejercicios({super.key});

@@ -1,6 +1,6 @@
-import 'package:ai_app_tests/App/Backend/Modules/Module_Diary.dart';
-import 'package:ai_app_tests/App/Backend/Modules/Module_Ejercicios.dart';
-import 'package:ai_app_tests/App/Backend/Modules/Module_Home.dart';
+import 'package:ai_app_tests/App/Backend/Modules/Home/Module_Diary.dart';
+import 'package:ai_app_tests/App/Backend/Modules/Home/Module_Ejercicios.dart';
+import 'package:ai_app_tests/App/Backend/Modules/Home/Module_Home.dart';
 import 'package:ai_app_tests/App/Backend/Auth/Client/Auth_ProfileUser.dart';
 import 'package:ai_app_tests/Frontend/Widgets/custom_bottom_nav_bar.dart';
 import 'package:flutter/material.dart';

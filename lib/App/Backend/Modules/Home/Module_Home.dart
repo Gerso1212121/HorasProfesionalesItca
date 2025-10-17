@@ -1,16 +1,16 @@
 import 'package:ai_app_tests/App/Backend/Modules/Module_ChatIA.dart';
-import 'package:ai_app_tests/App/Backend/Modules/Module_Diary.dart';
+import 'package:ai_app_tests/App/Backend/Modules/Home/Module_Diary.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../Data/DataBase/DatabaseHelper.dart';
-import '../../../Frontend/Widgets/activity_card.dart';
-import '../../../Frontend/Widgets/CalendarWidget.dart';
-import '../../../Frontend/Widgets/PsychologyCardWidget.dart';
-import '../../../Frontend/Widgets/ModuloDetailScreen.dart';
-import '../../Services/SampleDataLoader.dart';
-import '../../../Frontend/Widgets/AllModulesScreen.dart';
-import '../../../Frontend/Screens/MetasAcademicasScreen.dart';
+import '../../../Data/DataBase/DatabaseHelper.dart';
+import '../../../../Frontend/Widgets/activity_card.dart';
+import '../../../../Frontend/Widgets/CalendarWidget.dart';
+import '../../../../Frontend/Widgets/PsychologyCardWidget.dart';
+import '../../../../Frontend/Widgets/ModuloDetailScreen.dart';
+import '../../../Services/SampleDataLoader.dart';
+import '../../../../Frontend/Widgets/AllModulesScreen.dart';
+import '../../../../Frontend/Screens/MetasAcademicasScreen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
