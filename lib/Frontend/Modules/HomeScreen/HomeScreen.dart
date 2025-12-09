@@ -16,9 +16,12 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+  late ScrollController _scrollController;
+
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -27,13 +30,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
       final viewModel = context.read<HomeViewModel>();
-      // Recargar frase solo si la cache expiró (más de 1 hora)
       viewModel.loadMotivationalQuote(forceRefresh: false);
     }
   }
 
   @override
   void dispose() {
+    _scrollController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -42,26 +45,49 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => HomeViewModel(),
-      child: const _HomeScreenContent(),
+      child: _HomeScreenContent(scrollController: _scrollController),
     );
   }
 }
 
 class _HomeScreenContent extends StatelessWidget {
-  const _HomeScreenContent();
+  final ScrollController scrollController;
+
+  const _HomeScreenContent({required this.scrollController});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF2FFFF),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const HomeHeaderSection(),
-            const SizedBox(height: 30),
-            _buildMainContent(context),
-          ],
-        ),
+      body: CustomScrollView(
+        controller: scrollController,
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          // Header con efecto parallax
+          SliverAppBar(
+            expandedHeight: 600, // Altura expandida del header
+            collapsedHeight: 70,
+            backgroundColor: Colors.transparent,
+            surfaceTintColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            elevation: 0,
+            pinned: true, // Se mantiene visible
+            stretch: true, // Permite estirar
+            flexibleSpace: FlexibleSpaceBar(
+              collapseMode: CollapseMode.parallax, // Efecto parallax
+              stretchModes: const [
+                StretchMode.blurBackground,
+                StretchMode.blurBackground,
+              ],
+              background: const HomeHeaderSection(),
+            ),
+          ),
+
+          // Contenido principal
+          SliverToBoxAdapter(
+            child: _buildMainContent(context),
+          ),
+        ],
       ),
       floatingActionButton: MascotaFlotante(
         onTap: () => _navigateToDiary(context),
@@ -71,10 +97,11 @@ class _HomeScreenContent extends StatelessWidget {
 
   Widget _buildMainContent(BuildContext context) {
     final viewModel = context.watch<HomeViewModel>();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const SizedBox(height: 20), // Espacio después del header
         // Sección de Psicología
         HomeToolsSection(),
         const SizedBox(height: 30),
@@ -95,8 +122,8 @@ class _HomeScreenContent extends StatelessWidget {
           const begin = Offset(1.0, 0.0);
           const end = Offset.zero;
           const curve = Curves.easeInOutQuart;
-          var tween = Tween(begin: begin, end: end)
-              .chain(CurveTween(curve: curve));
+          var tween =
+              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
           var offsetAnimation = animation.drive(tween);
 
           return SlideTransition(

@@ -25,8 +25,8 @@ class HomeHeaderSection extends StatelessWidget {
           end: Alignment.topRight,
         ),
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(50),
-          bottomRight: Radius.circular(50),
+          bottomLeft: Radius.circular(00),
+          bottomRight: Radius.circular(00),
         ),
       ),
       padding: const EdgeInsets.only(top: 100, bottom: 24),
