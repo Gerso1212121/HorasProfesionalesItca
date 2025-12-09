@@ -1,0 +1,5 @@
+  assets:
+    - assets/images/
+    - .env
+    - lib/App/Backend/Books/
+    - lib/backEnd/LIBROS/
