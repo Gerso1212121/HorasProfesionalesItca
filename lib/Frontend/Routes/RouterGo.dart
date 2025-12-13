@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:horas2/Frontend/MainShell.dart';
+import 'package:horas2/MainShell.dart';
 import 'package:horas2/Frontend/Modules/WelcomeScreen.dart';
 import 'package:horas2/Frontend/Modules/Auth/Screens/AuthLoginScreen.dart';
 import 'package:horas2/Frontend/Modules/Auth/Screens/AuthRegisterScreen.dart';

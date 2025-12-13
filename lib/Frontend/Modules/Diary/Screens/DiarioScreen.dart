@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:horas2/Frontend/Modules/Diary/ViewModels/service.dart';
-import 'package:horas2/Frontend/Modules/Diary/model/DiarioModel.dart';
-import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:horas2/Frontend/Modules/Diary/Screens/NoteScreen.dart';
+import 'package:horas2/Frontend/Modules/Profile/Screens/ProfileScreen.dart';
+import 'package:intl/intl.dart';
 
 class DiarioScreen extends StatefulWidget {
   const DiarioScreen({super.key});
@@ -12,1397 +12,594 @@ class DiarioScreen extends StatefulWidget {
 }
 
 class _DiarioScreenState extends State<DiarioScreen> {
-  final TextEditingController _tituloController = TextEditingController();
-  final TextEditingController _contenidoController = TextEditingController();
-  final DiarioService _diarioService = DiarioService();
-  bool _isLoading = false;
-  EstadoAnimo? _estadoAnimoSeleccionado;
-  List<DiarioModel>? _entradasCache;
+  // Datos de ejemplo mejorados
+  final List<Map<String, dynamic>> _entradas = [
+    {
+      'id': 1,
+      'fecha': DateTime(2024, 2, 15),
+      'titulo': 'Un día increíble en la playa',
+      'contenido': 'Hoy fue un día maravilloso lleno de aprendizajes y momentos especiales que quiero recordar siempre. El atardecer fue espectacular...',
+      'emoji': '😊',
+      'imagenes': 3,
+      'hora': '10:30 AM',
+      'colorSet': 0,
+    },
+    {
+      'id': 2,
+      'fecha': DateTime(2024, 2, 14),
+      'titulo': 'Reflexiones nocturnas',
+      'contenido': 'Estaba pensando en lo rápido que pasa el tiempo y en todas las cosas que quiero lograr este año. Necesito enfocarme más...',
+      'emoji': '🤔',
+      'imagenes': 1,
+      'hora': '11:15 PM',
+      'colorSet': 1,
+    },
+    {
+      'id': 3,
+      'fecha': DateTime(2024, 2, 13),
+      'titulo': 'Día productivo en el trabajo',
+      'contenido': 'Terminé todos mis pendientes y me siento muy satisfecho con lo que logré hoy en el proyecto nuevo. El equipo colaboró excelentemente...',
+      'emoji': '🚀',
+      'imagenes': 2,
+      'hora': '6:45 PM',
+      'colorSet': 2,
+    },
+    {
+      'id': 4,
+      'fecha': DateTime(2024, 2, 12),
+      'titulo': 'Cena familiar especial',
+      'contenido': 'Hoy nos reunimos toda la familia después de mucho tiempo. Fue emocionante ver a todos juntos y compartir historias...',
+      'emoji': '❤️',
+      'imagenes': 4,
+      'hora': '8:20 PM',
+      'colorSet': 3,
+    },
+    {
+      'id': 5,
+      'fecha': DateTime(2024, 2, 11),
+      'titulo': 'Aprendizaje constante',
+      'contenido': 'Hoy dediqué tiempo a aprender nuevas habilidades. Me enfoqué en desarrollo personal y encontré recursos increíbles...',
+      'emoji': '📚',
+      'imagenes': 0,
+      'hora': '4:30 PM',
+      'colorSet': 0,
+    },
+  ];
+
+  // Conjuntos de colores para las tarjetas
+  final List<Map<String, dynamic>> _colorSets = [
+    {
+      'primary': Color(0xFF4285F4),
+      'light': Color(0xFFE8F0FE),
+      'accent': Color(0xFFD2E3FC),
+      'text': Color(0xFF1A73E8),
+      'badge': Color(0xFF4285F4),
+    },
+    {
+      'primary': Color(0xFF34A853),
+      'light': Color(0xFFE6F4EA),
+      'accent': Color(0xFFCEEAD6),
+      'text': Color(0xFF188038),
+      'badge': Color(0xFF34A853),
+    },
+    {
+      'primary': Color(0xFFFBBC05),
+      'light': Color(0xFFFEF7E0),
+      'accent': Color(0xFFFEEFC3),
+      'text': Color(0xFFF9AB00),
+      'badge': Color(0xFFFBBC05),
+    },
+    {
+      'primary': Color(0xFFEA4335),
+      'light': Color(0xFFFCE8E6),
+      'accent': Color(0xFFFAD2CF),
+      'text': Color(0xFFD93025),
+      'badge': Color(0xFFEA4335),
+    },
+    {
+      'primary': Color(0xFF8E24AA),
+      'light': Color(0xFFF3E5F5),
+      'accent': Color(0xFFE1BEE7),
+      'text': Color(0xFF7B1FA2),
+      'badge': Color(0xFF8E24AA),
+    },
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2FFFF), // Mismo color de fondo del Home
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header rediseñado
-            _buildHeader(),
-
-            // Contenido principal
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Campo de título rediseñado
-                    _buildCampoTitulo(),
-
-                    const SizedBox(height: 20),
-
-                    // Área de contenido mejorada
-                    _buildAreaContenido(),
-
-                    const SizedBox(height: 20),
-
-                    // Selector de emociones mejorado
-                    _buildSelectorEmociones(),
-                    const SizedBox(height: 100),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-
-      // Botón flotante rediseñado
-      floatingActionButton: _buildBotonGuardar(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFB2F5DB), Color(0xFF86A8E7)],
-          begin: Alignment.bottomLeft,
-          end: Alignment.topRight,
-        ),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-
-
-
-          // Ícono del diario
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.9),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: const Center(
-              child: Text(
-                '📖',
-                style: TextStyle(fontSize: 24),
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 16),
-
-          // Título y fecha
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Mi Diario',
-                  style: GoogleFonts.inter(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
-                  ),
-                ),
-                Text(
-                  _formatDate(DateTime.now()),
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: Colors.black54,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Botón de historial
-          GestureDetector(
-            onTap: _mostrarHistorial,
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.9),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Icon(
-                Icons.history_rounded,
-                color: const Color(0xFFF66B7D),
-                size: 22,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSelectorEmociones() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
-          ),
-        ],
-        border: Border.all(
-          color: Colors.grey.withOpacity(0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Título mejorado
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
+      backgroundColor: const Color(0xFFF8FAFF),
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          // Header elegante
+          SliverAppBar(
+            backgroundColor: Colors.transparent,
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
+            floating: true,
+            snap: true,
+            expandedHeight: 140,
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFF66B7D), Color(0xFFFF8E6E)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    '3',
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  '¿Cómo te sientes hoy?',
-                  style: GoogleFonts.inter(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          // Descripción
-          Padding(
-            padding: const EdgeInsets.only(left: 48),
-            child: Text(
-              'Selecciona tu estado emocional actual',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // Grid de emociones horizontal mejorado
-          SizedBox(
-            height: 100,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: EstadoAnimo.values.length,
-              itemBuilder: (context, index) {
-                final estado = EstadoAnimo.values[index];
-                final isSelected = _estadoAnimoSeleccionado == estado;
-
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _estadoAnimoSeleccionado = estado;
-                    });
-                  },
-                  child: Container(
-                    width: 80,
-                    margin: EdgeInsets.only(
-                      right: index == EstadoAnimo.values.length - 1 ? 0 : 12,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: isSelected
-                          ? const LinearGradient(
-                              colors: [Color(0xFFB2F5DB), Color(0xFF86A8E7)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            )
-                          : null,
-                      color: isSelected ? null : Colors.grey[50],
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isSelected
-                            ? const Color(0xFF86A8E7)
-                            : Colors.grey[300]!,
-                        width: isSelected ? 2 : 1,
-                      ),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: const Color(0xFF86A8E7).withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          estado.emoji,
-                          style: const TextStyle(fontSize: 24),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          estado.nombre,
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                            color:
-                                isSelected ? Colors.black87 : Colors.grey[700],
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCampoTitulo() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
-          ),
-        ],
-        border: Border.all(
-          color: Colors.grey.withOpacity(0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF86A8E7), Color(0xFFB2F5DB)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    '1',
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Título de tu día',
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // Campo de título mejorado - AHORA CON MÚLTIPLES LÍNEAS
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: _tituloController.text.isNotEmpty
-                    ? const Color(0xFF86A8E7).withOpacity(0.5)
-                    : Colors.grey[300]!,
-              ),
-            ),
-            child: TextField(
-              controller: _tituloController,
-              maxLines: null, // Permite múltiples líneas
-              minLines: 1, // Mínimo una línea
-              textInputAction: TextInputAction.done,
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Ej: Un día increíble, Reflexiones matutinas...',
-                hintStyle: GoogleFonts.inter(
-                  color: Colors.grey,
-                  fontSize: 15,
-                  fontWeight: FontWeight.normal,
-                ),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.all(16),
-                suffixIcon: _tituloController.text.isNotEmpty
-                    ? Icon(
-                        Icons.check_circle,
-                        color: const Color(0xFF4CAF50),
-                        size: 20,
-                      )
-                    : null,
-              ),
-              onChanged: (text) {
-                setState(() {});
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAreaContenido() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
-          ),
-        ],
-        border: Border.all(
-          color: Colors.grey.withOpacity(0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFF66B7D), Color(0xFFFF8E6E)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    '2',
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Cuéntanos tu día',
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // Campo de contenido mejorado
-          Container(
-            height: 220,
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: _contenidoController.text.isNotEmpty
-                    ? const Color(0xFF86A8E7).withOpacity(0.5)
-                    : Colors.grey[300]!,
-              ),
-            ),
-            child: TextField(
-              controller: _contenidoController,
-              maxLines: null,
-              expands: true,
-              textAlignVertical: TextAlignVertical.top,
-              style: GoogleFonts.inter(
-                fontSize: 15,
-                height: 1.5,
-                color: Colors.black87,
-              ),
-              decoration: const InputDecoration(
-                hintText:
-                    'Escribe aquí todo lo que quieras recordar de este día...\n\n• ¿Qué hiciste?\n• ¿Cómo te sentiste?\n• ¿Qué aprendiste?\n• ¿Qué te hizo feliz?',
-                hintStyle: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 14,
-                  height: 1.4,
-                ),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.all(16),
-              ),
-              onChanged: (text) {
-                setState(() {});
-              },
-            ),
-          ),
-
-          // Contador de palabras
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              '${_contenidoController.text.split(RegExp(r'\s+')).where((word) => word.isNotEmpty).length} palabras',
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                color: Colors.grey,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBotonGuardar() {
-    final puedeGuardar = _contenidoController.text.trim().isNotEmpty &&
-        _tituloController.text.trim().isNotEmpty &&
-        _estadoAnimoSeleccionado != null;
-
-    // Se esconde cuando el usuario está escribiendo (teclado visible)
-    final isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
-
-    if (isKeyboardVisible && !puedeGuardar) {
-      return const SizedBox.shrink(); // Se esconde completamente
-    }
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      margin: const EdgeInsets.only(bottom: 20),
-      child: FloatingActionButton(
-        onPressed: _isLoading || !puedeGuardar ? null : _guardarEntrada,
-        backgroundColor: puedeGuardar
-            ? const Color(0xFFF66B7D) // Color del botón del Home
-            : Colors.grey[400],
-        foregroundColor: Colors.white,
-        elevation: 8,
-        child: _isLoading
-            ? SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : const Icon(Icons.save_rounded, size: 24),
-      ),
-    );
-  }
-
-  // === MÉTODOS ORIGINALES (SE MANTIENEN IGUAL) ===
-
-  Future<void> _guardarEntrada() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      await _diarioService.crearEntrada(
-        contenido: _contenidoController.text.trim(),
-        categoria: _tituloController.text.trim(),
-        estadoAnimo: _estadoAnimoSeleccionado?.nombre,
-        valoracion: _estadoAnimoSeleccionado?.valor,
-      );
-
-      // Limpiar campos
-      _contenidoController.clear();
-      _tituloController.clear();
-      _estadoAnimoSeleccionado = null;
-
-      // Limpiar cache para que se recargue con la nueva entrada
-      _entradasCache = null;
-
-      // Mostrar modal de éxito
-      if (mounted) {
-        _mostrarModalExito();
-      }
-    } catch (e) {
-      // Mostrar modal de error
-      if (mounted) {
-        _mostrarModalError('Error al guardar: $e');
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  void _mostrarModalExito() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icono de éxito animado
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF4CAF50), Color(0xFF45C7C1)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.check_rounded,
-                  color: Colors.white,
-                  size: 40,
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Título
-              Text(
-                '¡Guardado exitoso!',
-                style: GoogleFonts.inter(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // Mensaje
-              Text(
-                'Tu día ha sido guardado en el diario 📖✨',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  color: Colors.grey[700],
-                  height: 1.4,
-                ),
-              ),
-
-              const SizedBox(height: 28),
-
-              // Botón de aceptar
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4CAF50),
-                    foregroundColor: Colors.white,
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: Text(
-                    '¡Entendido!',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _mostrarModalError(String mensaje) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icono de error
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.error_outline_rounded,
-                  color: Colors.red[600],
-                  size: 40,
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Título
-              Text(
-                'Error al guardar',
-                style: GoogleFonts.inter(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // Mensaje de error
-              Text(
-                mensaje,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                  fontSize: 15,
-                  color: Colors.grey[700],
-                  height: 1.4,
-                ),
-              ),
-
-              const SizedBox(height: 28),
-
-              // Botón de aceptar
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red[600],
-                    foregroundColor: Colors.white,
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: Text(
-                    'Reintentar',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _mostrarHistorial() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _buildHistorialModal(),
-    );
-  }
-
-  Widget _buildHistorialModal() {
-    return StatefulBuilder(
-      builder: (context, setModalState) => Container(
-        height: MediaQuery.of(context).size.height * 0.85,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-        ),
-        child: Column(
-          children: [
-            // Handle del modal
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(top: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-
-            // Header del modal
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Text(
-                    '📚 Mi Historial',
-                    style: GoogleFonts.inter(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        shape: BoxShape.circle,
-                      ),
-                      child:
-                          Icon(Icons.close, size: 18, color: Colors.grey[600]),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Lista de entradas
-            Expanded(
-              child: _entradasCache == null
-                  ? FutureBuilder<List<DiarioModel>>(
-                      future: _diarioService.obtenerEntradas(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Center(
-                              child: CircularProgressIndicator());
-                        }
-
-                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                          return const Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  '📖',
-                                  style: TextStyle(fontSize: 64),
-                                ),
-                                SizedBox(height: 16),
-                                Text(
-                                  'Tu diario está vacío',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Comienza escribiendo tu primera entrada',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (_entradasCache == null) {
-                            setState(() {
-                              _entradasCache = List.from(snapshot.data!);
-                              _entradasCache!
-                                  .sort((a, b) => b.fecha.compareTo(a.fecha));
-                            });
-                          }
-                        });
-
-                        final entradas = snapshot.data!;
-                        entradas.sort((a, b) => b.fecha.compareTo(a.fecha));
-
-                        return ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          itemCount: entradas.length,
-                          itemBuilder: (context, index) {
-                            final entrada = entradas[index];
-                            return _buildEntradaHistorial(
-                                entrada, setModalState);
-                          },
-                        );
-                      },
-                    )
-                  : _entradasCache!.isEmpty
-                      ? const Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                '📖',
-                                style: TextStyle(fontSize: 64),
-                              ),
-                              SizedBox(height: 16),
-                              Text(
-                                'Tu diario está vacío',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                'Comienza escribiendo tu primera entrada',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          itemCount: _entradasCache!.length,
-                          itemBuilder: (context, index) {
-                            final entrada = _entradasCache![index];
-                            return _buildEntradaHistorial(
-                                entrada, setModalState);
-                          },
-                        ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEntradaHistorial(DiarioModel entrada,
-      [StateSetter? setModalState]) {
-    return GestureDetector(
-      onTap: () => _mostrarEntradaCompleta(entrada),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey[200]!),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _formatDateShort(DateTime.parse(entrada.fecha)),
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => _confirmarEliminar(entrada, setModalState),
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.delete_outline,
-                      size: 16,
-                      color: Colors.red[400],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            if (entrada.estadoAnimo != null)
-              Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFB2F5DB).withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  entrada.estadoAnimo!,
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    color: const Color(0xFF2E7D32),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            if (entrada.categoria != null && entrada.categoria!.isNotEmpty)
-              Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  entrada.categoria!,
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            Text(
-              entrada.contenido,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                height: 1.4,
-                color: Colors.black87,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Spacer(),
-                Text(
-                  'Toca para ver completo',
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    color: Colors.grey[500],
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.arrow_forward_ios,
-                  size: 10,
-                  color: Colors.grey[500],
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _mostrarEntradaCompleta(DiarioModel entrada) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Container(
-          height: MediaQuery.of(context).size.height * 0.9,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(24),
-              topRight: Radius.circular(24),
-            ),
-          ),
-          child: Column(
-            children: [
-              // Handle del modal
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(top: 12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-
-              // Header del modal
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            entrada.categoria ?? 'Sin título',
-                            style: GoogleFonts.inter(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _formatDate(DateTime.parse(entrada.fecha)),
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.close,
-                          size: 20,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Contenido de la entrada
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Estado de ánimo
-                      if (entrada.estadoAnimo != null)
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 20),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 10),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFFB2F5DB), Color(0xFF86A8E7)],
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                _getEmojiForEstado(entrada.estadoAnimo!),
-                                style: const TextStyle(fontSize: 18),
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                entrada.estadoAnimo!,
-                                style: GoogleFonts.inter(
-                                  fontSize: 14,
-                                  color: Colors.black87,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                      // Contenido completo
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[50],
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.grey[200]!),
-                        ),
-                        child: Text(
-                          entrada.contenido,
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            height: 1.6,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Botón eliminar - MEJORADO
-                      Container(
-                        width: double.infinity,
-                        height: 54,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            _confirmarEliminar(entrada);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Colors.red,
-                            elevation: 2,
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              side: BorderSide(
-                                color: Colors.red.withOpacity(0.3),
-                                width: 1.5,
-                              ),
-                            ),
-                          ),
-                          icon: Icon(
-                            Icons.delete_outline_rounded,
-                            size: 22,
-                            color: Colors.red[600],
-                          ),
-                          label: Text(
-                            'Eliminar entrada',
-                            style: GoogleFonts.inter(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.red[600],
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 30),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      const Color(0xFF4285F4).withOpacity(0.1),
+                      Colors.transparent,
                     ],
                   ),
                 ),
               ),
+            ),
+            title: Text(
+              'Mi Diario',
+              style: GoogleFonts.poppins(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF1A237E),
+                letterSpacing: -0.5,
+              ),
+            ),
+            centerTitle: false,
+            actions: [
+              Container(
+                margin: const EdgeInsets.only(right: 16),
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  icon: Icon(Icons.calendar_month_rounded,
+                      color: const Color(0xFF4285F4), size: 22),
+                  onPressed: () {
+                    // Acción del calendario
+                  },
+                ),
+              ),
             ],
           ),
+
+          // Filtros y estadísticas
+          SliverToBoxAdapter(
+            child: _buildStatsHeader(),
+          ),
+
+          // Lista de entradas
+          if (_entradas.isEmpty)
+            SliverFillRemaining(
+              child: _buildEmptyState(),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    return _buildDiaryCard(_entradas[index]);
+                  },
+                  childCount: _entradas.length,
+                ),
+              ),
+            ),
+
+          // Espacio al final
+          const SliverToBoxAdapter(
+            child: SizedBox(height: 100),
+          ),
+        ],
+      ),
+
+      // Botón de nueva entrada
+floatingActionButton: FloatingActionButton.extended(
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NoteScreen(),
+      ),
+    );
+  },
+  backgroundColor: const Color(0xFF4285F4),
+  foregroundColor: Colors.white,
+  elevation: 8,
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(20),
+  ),
+  icon: const Icon(Icons.edit_note_rounded, size: 22),
+  label: Text(
+    'Nueva entrada',
+    style: GoogleFonts.inter(
+      fontSize: 14,
+      fontWeight: FontWeight.w600,
+    ),
+  ),
+),
+
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+    );
+  }
+
+  Widget _buildStatsHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Estadísticas
+          Row(
+            children: [
+              _buildStatItem(
+                icon: Icons.book_rounded,
+                value: _entradas.length.toString(),
+                label: 'Entradas',
+                color: const Color(0xFF4285F4),
+              ),
+              const SizedBox(width: 16),
+              _buildStatItem(
+                icon: Icons.photo_library_rounded,
+                value: _entradas
+                    .fold(0, (sum, entry) => sum + (entry['imagenes'] as int))
+                    .toString(),
+                label: 'Fotos',
+                color: const Color(0xFF34A853),
+              ),
+              const SizedBox(width: 16),
+              _buildStatItem(
+                icon: Icons.emoji_emotions_rounded,
+                value: _entradas.length > 0
+                    ? _entradas.last['emoji']
+                    : '😊',
+                label: 'Hoy',
+                color: const Color(0xFFFBBC05),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // Título de sección
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Tus recuerdos',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1A237E),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F0FE),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.filter_list_rounded,
+                      size: 14,
+                      color: const Color(0xFF4285F4),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Filtrar',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF4285F4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem({
+    required IconData icon,
+    required String value,
+    required String label,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.grey[100]!,
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                size: 18,
+                color: color,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1A237E),
+                    ),
+                  ),
+                  Text(
+                    label,
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  void _confirmarEliminar(DiarioModel entrada, [StateSetter? setModalState]) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
+  Widget _buildDiaryCard(Map<String, dynamic> entry) {
+    final colors = _colorSets[entry['colorSet']];
+    final fecha = entry['fecha'] as DateTime;
+    final esHoy = fecha.day == DateTime.now().day &&
+        fecha.month == DateTime.now().month &&
+        fecha.year == DateTime.now().year;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Card(
+        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: colors['light'] as Color,
+            width: 1.5,
           ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icono de advertencia
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.warning_rounded,
-                  size: 32,
-                  color: Colors.red[600],
-                ),
+              // Header con fecha y emoji
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Badge de fecha
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colors['light'] as Color,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (colors['primary'] as Color).withOpacity(0.1),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.calendar_today_rounded,
+                          size: 14,
+                          color: colors['primary'] as Color,
+                        ),
+                        const SizedBox(width: 8),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              esHoy ? 'HOY' : DateFormat('dd').format(fecha),
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: colors['primary'] as Color,
+                              ),
+                            ),
+                            if (!esHoy)
+                              Text(
+                                DateFormat('MMM', 'es_ES').format(fecha).toUpperCase(),
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: (colors['primary'] as Color).withOpacity(0.7),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Emoji en círculo
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: colors['accent'] as Color,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: colors['primary'] as Color,
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (colors['primary'] as Color).withOpacity(0.15),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        entry['emoji'],
+                        style: const TextStyle(fontSize: 20),
+                      ),
+                    ),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 20),
 
               // Título
               Text(
-                'Eliminar entrada',
-                style: GoogleFonts.inter(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                entry['titulo'],
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1A237E),
+                  height: 1.3,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
 
               const SizedBox(height: 12),
 
-              // Mensaje
+              // Contenido
               Text(
-                '¿Estás seguro de que quieres eliminar esta entrada del diario? Esta acción no se puede deshacer.',
-                textAlign: TextAlign.center,
+                entry['contenido'],
                 style: GoogleFonts.inter(
-                  fontSize: 12,
-                  color: Colors.grey[700],
-                  height: 1.4,
+                  fontSize: 14,
+                  color: const Color(0xFF5A5A5A),
+                  height: 1.5,
+                  letterSpacing: 0.1,
                 ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
               ),
 
-              const SizedBox(height: 24),
+              // Miniaturas de imágenes (si existen)
+              if ((entry['imagenes'] as int) > 0) ...[
+                const SizedBox(height: 16),
+                _buildImageThumbnails(entry['imagenes'], colors['accent'] as Color),
+              ],
 
-              // Botones
+              const SizedBox(height: 16),
+
+              // Footer con acciones
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Botón Cancelar
-                  Expanded(
-                    child: Container(
-                      height: 48,
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.grey[700],
-                          side: BorderSide(
-                            color: Colors.grey[300]!,
-                            width: 1.5,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                  // Hora y etiqueta
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colors['light'] as Color,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.access_time_rounded,
+                          size: 12,
+                          color: colors['text'] as Color,
                         ),
-                        child: Text(
-                          'Cancelar',
+                        const SizedBox(width: 6),
+                        Text(
+                          entry['hora'],
                           style: GoogleFonts.inter(
-                            fontSize: 14,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
+                            color: colors['text'] as Color,
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
 
-                  const SizedBox(width: 12),
-
-                  // Botón Eliminar
-                  Expanded(
+                  // Botón de acción
+                  GestureDetector(
+                    onTap: () {
+                      // Navegar a detalle
+                    },
                     child: Container(
-                      height: 48,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _eliminarEntrada(entrada, setModalState);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red[600],
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors['primary'] as Color,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (colors['primary'] as Color).withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
                           ),
-                        ),
-                        child: Text(
-                          'Eliminar',
-                          style: GoogleFonts.inter(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Leer más',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 16,
+                            color: Colors.white,
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -1415,359 +612,212 @@ class _DiarioScreenState extends State<DiarioScreen> {
     );
   }
 
-  Future<void> _eliminarEntrada(DiarioModel entrada,
-      [StateSetter? setModalState]) async {
-    // Mostrar modal de carga
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => _buildModalCarga(),
-    );
+  Widget _buildImageThumbnails(int count, Color accentColor) {
+    // Colores para las miniaturas
+    final placeholderColors = [
+      accentColor.withOpacity(0.3),
+      accentColor.withOpacity(0.4),
+      accentColor.withOpacity(0.5),
+      accentColor.withOpacity(0.6),
+    ];
 
-    // Eliminar inmediatamente de la lista visual (optimistic update)
-    if (_entradasCache != null) {
-      setState(() {
-        _entradasCache!.removeWhere((e) => e.idDiario == entrada.idDiario);
-      });
-
-      // También actualizar el modal si está abierto
-      if (setModalState != null) {
-        setModalState(() {});
-      }
-    }
-
-    try {
-      if (entrada.idDiario != null) {
-        await _diarioService.eliminarEntrada(entrada.idDiario!);
-
-        if (mounted) {
-          // Cerrar modal de carga
-          Navigator.pop(context);
-
-          // Mostrar modal de éxito
-          _mostrarModalEliminacionExito();
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        // Cerrar modal de carga
-        Navigator.pop(context);
-
-        // Si hay error, restaurar la entrada en la lista
-        if (_entradasCache != null) {
-          setState(() {
-            _entradasCache!.add(entrada);
-            _entradasCache!.sort((a, b) => b.fecha.compareTo(a.fecha));
-          });
-
-          // También actualizar el modal si está abierto
-          if (setModalState != null) {
-            setModalState(() {});
-          }
-        }
-
-        // Mostrar modal de error
-        _mostrarModalErrorEliminacion('Error al eliminar: $e');
-      }
-    }
-  }
-
-  Widget _buildModalCarga() {
-    return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(32),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Spinner de carga
-            SizedBox(
-              width: 60,
-              height: 60,
-              child: CircularProgressIndicator(
-                strokeWidth: 4,
-                valueColor:
-                    const AlwaysStoppedAnimation<Color>(Color(0xFFFFA000)),
-                backgroundColor: const Color(0xFFFFA000).withOpacity(0.2),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Texto de carga
-            Text(
-              'Eliminando entrada...',
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            Text(
-              'Por favor espera un momento',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _mostrarModalEliminacionExito() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icono de éxito
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4CAF50).withOpacity(0.1),
-                  shape: BoxShape.circle,
+    return SizedBox(
+      height: 70,
+      child: Row(
+        children: [
+          // Miniaturas
+          for (int i = 0; i < (count > 4 ? 4 : count); i++)
+            Container(
+              margin: EdgeInsets.only(right: 8),
+              width: 70,
+              height: 70,
+              decoration: BoxDecoration(
+                color: placeholderColors[i % placeholderColors.length],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.white,
+                  width: 2,
                 ),
-                child: const Icon(
-                  Icons.check_circle_rounded,
-                  color: Color(0xFF4CAF50),
-                  size: 40,
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Título
-              Text(
-                '¡Eliminado!',
-                style: GoogleFonts.inter(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // Mensaje
-              Text(
-                'La entrada ha sido eliminada exitosamente',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  color: Colors.grey[700],
-                  height: 1.4,
-                ),
-              ),
-
-              const SizedBox(height: 28),
-
-              // Botón de aceptar
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4CAF50),
-                    foregroundColor: Colors.white,
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
                   ),
-                  child: Text(
-                    'Continuar',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
+                ],
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _mostrarModalErrorEliminacion(String mensaje) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icono de error
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
+              child: Center(
                 child: Icon(
-                  Icons.error_outline_rounded,
-                  color: Colors.red[600],
-                  size: 40,
+                  Icons.photo_rounded,
+                  color: Colors.white.withOpacity(0.8),
+                  size: 24,
                 ),
               ),
+            ),
 
-              const SizedBox(height: 24),
-
-              // Título
-              Text(
-                'Error al eliminar',
-                style: GoogleFonts.inter(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+          // Indicador de más imágenes
+          if (count > 4)
+            Container(
+              margin: const EdgeInsets.only(left: 4),
+              width: 70,
+              height: 70,
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.grey[300]!,
+                  width: 2,
                 ),
               ),
-
-              const SizedBox(height: 12),
-
-              // Mensaje de error
-              Text(
-                mensaje,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                  fontSize: 15,
-                  color: Colors.grey[700],
-                  height: 1.4,
-                ),
-              ),
-
-              const SizedBox(height: 28),
-
-              // Botón de aceptar
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red[600],
-                    foregroundColor: Colors.white,
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: Text(
-                    'Entendido',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+              child: Center(
+                child: Text(
+                  '+${count - 4}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.grey[600],
                   ),
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+        ],
       ),
     );
   }
 
-  // Helper method to safely format dates with fallback
-  String _formatDate(DateTime date) {
-    try {
-      return DateFormat('EEEE, dd MMMM yyyy', 'es_ES').format(date);
-    } catch (e) {
-      // Fallback to default locale if Spanish locale fails
-      try {
-        return DateFormat('EEEE, dd MMMM yyyy').format(date);
-      } catch (e2) {
-        // Ultimate fallback to simple format
-        return DateFormat('dd/MM/yyyy').format(date);
-      }
-    }
+  Widget _buildEmptyState() {
+    return Padding(
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Ilustración
+          Container(
+            width: 180,
+            height: 180,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF4285F4).withOpacity(0.1),
+                  const Color(0xFF34A853).withOpacity(0.1),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Icon(
+                Icons.bookmark_add_rounded,
+                size: 80,
+                color: const Color(0xFF4285F4),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 32),
+
+          // Texto motivacional
+          Text(
+            'Tu diario personal',
+            style: GoogleFonts.poppins(
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1A237E),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          Text(
+            'Comienza a documentar tus días,\nreflexiones y momentos especiales',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              color: Colors.grey[700],
+              height: 1.4,
+            ),
+          ),
+
+          const SizedBox(height: 32),
+
+          // Beneficios
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.grey[200]!,
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                _buildBenefitItem(
+                  icon: Icons.auto_awesome_rounded,
+                  text: 'Reflexiona sobre tu crecimiento',
+                  color: const Color(0xFF4285F4),
+                ),
+                const SizedBox(height: 12),
+                _buildBenefitItem(
+                  icon: Icons.photo_library_rounded,
+                  text: 'Guarda fotos de momentos especiales',
+                  color: const Color(0xFF34A853),
+                ),
+                const SizedBox(height: 12),
+                _buildBenefitItem(
+                  icon: Icons.timeline_rounded,
+                  text: 'Visualiza tu progreso personal',
+                  color: const Color(0xFFFBBC05),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
-  // Helper method to safely format short dates with fallback
-  String _formatDateShort(DateTime date) {
-    try {
-      return DateFormat('dd MMM yyyy', 'es_ES').format(date);
-    } catch (e) {
-      // Fallback to default locale if Spanish locale fails
-      try {
-        return DateFormat('dd MMM yyyy').format(date);
-      } catch (e2) {
-        // Ultimate fallback to simple format
-        return DateFormat('dd/MM/yyyy').format(date);
-      }
-    }
-  }
-
-  // Helper method to get emoji for estado de animo
-  String _getEmojiForEstado(String estadoAnimo) {
-    switch (estadoAnimo.toLowerCase()) {
-      case 'muy feliz':
-        return '😄';
-      case 'feliz':
-        return '😊';
-      case 'neutral':
-        return '😐';
-      case 'triste':
-        return '😢';
-      case 'muy triste':
-        return '😭';
-      case 'ansioso':
-        return '😰';
-      case 'relajado':
-        return '😌';
-      case 'enojado':
-        return '😠';
-      case 'emocionado':
-        return '🤩';
-      case 'cansado':
-        return '😴';
-      default:
-        return '😊';
-    }
-  }
-
-  @override
-  void dispose() {
-    _contenidoController.dispose();
-    _tituloController.dispose();
-    super.dispose();
+  Widget _buildBenefitItem({
+    required IconData icon,
+    required String text,
+    required Color color,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            icon,
+            size: 18,
+            color: color,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF5A5A5A),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

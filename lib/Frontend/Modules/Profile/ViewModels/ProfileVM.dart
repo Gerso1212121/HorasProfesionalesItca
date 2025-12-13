@@ -1,23 +1,29 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Importante para el Plan B
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:horas2/Backend/Data/Services/DataBase/DatabaseHelper.dart';
 import 'package:horas2/Frontend/Routes/RouterGo.dart';
 
 class ProfileVM extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance; // Instancia Firestore
-  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  StreamSubscription<User?>? _authSubscription;
 
   bool _isLoading = true;
   Map<String, dynamic>? _usuario;
+  bool _hasError = false;
+  String? _currentUserId;
 
   // Getters
   bool get isLoading => _isLoading;
   Map<String, dynamic>? get usuario => _usuario;
+  bool get hasError => _hasError;
+  FirebaseAuth get auth => _auth;
+  String? get currentUserId => _currentUserId;
 
-  // Lógica encapsulada para saber si es ITCA
   bool get esEstudianteItca {
     if (_usuario == null) return false;
     final email = _usuario!['correo']?.toString().toLowerCase() ?? '';
@@ -25,57 +31,153 @@ class ProfileVM extends ChangeNotifier {
   }
 
   ProfileVM() {
-    _cargarUsuario();
-  }
-
-  Future<void> _cargarUsuario() async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      final currentUser = _auth.currentUser;
-
-      if (currentUser != null) {
-        final uid = currentUser.uid;
-        
-        // 1. INTENTO A: Buscar en base de datos local (SQLite)
-        Map<String, dynamic>? datosUsuario = await _dbHelper.getEstudiantePorUID(uid);
-
-        // 2. INTENTO B: Si es null en local, buscamos en Firestore (Nube)
-        if (datosUsuario == null) {
-          print('⚠️ No encontrado en SQLite, buscando en Firestore...');
-          final doc = await _firestore.collection('estudiantes').doc(uid).get();
-          
-          if (doc.exists) {
-            datosUsuario = doc.data();
-            // Opcional: Aquí podrías guardar en SQLite para la próxima vez
-            // await _dbHelper.insertEstudiante(datosUsuario!); 
-            print('✅ Recuperado desde Firestore');
-          }
-        }
-
-        // 3. Verificamos si encontramos datos en algún lado
-        if (datosUsuario != null) {
-          _usuario = datosUsuario;
-        } else {
-          // Si no está ni en local ni en nube, ahí sí es un error
-          print('❌ Usuario no encontrado en ninguna base de datos');
-          _usuario = null;
-          // Opcional: forzar logout si es crítico
-        }
+    print('🟢 ProfileVM constructor llamado');
+    
+    // Escuchar cambios de autenticación
+    _authSubscription = _auth.authStateChanges().listen((user) {
+      print('👤 Cambio en autenticación detectado');
+      print('   - Usuario anterior en VM: $_currentUserId');
+      print('   - Usuario nuevo de Firebase: ${user?.uid}');
+      
+      final newUserId = user?.uid;
+      
+      // Si el usuario cambió, limpiar todo
+      if (_currentUserId != null && newUserId != null && _currentUserId != newUserId) {
+        print('🔄 ¡USUARIO CAMBIÓ! Limpiando datos antiguos...');
+        _resetState();
       }
-    } catch (e) {
-      print('❌ Error cargando perfil: $e');
-    } finally {
+      
+      _currentUserId = newUserId;
+      
+      // Cargar datos del nuevo usuario
+      if (newUserId != null) {
+        print('🔄 Cargando datos para nuevo usuario: $newUserId');
+        _cargarUsuario();
+      } else {
+        print('👋 Usuario cerró sesión');
+        _resetState();
+      }
+    });
+    
+    // Cargar datos iniciales
+    _currentUserId = _auth.currentUser?.uid;
+    if (_currentUserId != null) {
+      Future.delayed(Duration.zero, () {
+        _cargarUsuario();
+      });
+    } else {
       _isLoading = false;
       notifyListeners();
     }
   }
 
+  // Reiniciar estado completo
+  void _resetState() {
+    print('🧹 Reiniciando estado de ProfileVM');
+    _usuario = null;
+    _isLoading = true;
+    _hasError = false;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
+  }
+
+  // Método público para recargar
+  Future<void> cargarUsuario() async {
+    print('🔁 cargarUsuario() llamado externamente');
+    _isLoading = true;
+    _hasError = false;
+    notifyListeners();
+    
+    await _cargarUsuario();
+  }
+
+  Future<void> _cargarUsuario() async {
+    try {
+      print('🔍 _cargarUsuario() iniciado');
+      final currentUser = _auth.currentUser;
+      final currentUserId = currentUser?.uid;
+      
+      print('👤 Usuario actual de Firebase: $currentUserId');
+      print('👤 Usuario registrado en VM: $_currentUserId');
+
+      // Verificar que estamos cargando para el usuario correcto
+      if (currentUserId != _currentUserId) {
+        print('⚠️ Desfase de usuario! Firebase: $currentUserId, VM: $_currentUserId');
+        print('🔄 Esperando a que el listener actualice el usuario...');
+        return;
+      }
+
+      if (currentUser != null) {
+        print('🔥 Buscando en Firestore para UID: $currentUserId');
+        
+        final doc = await _firestore.collection('estudiantes').doc(currentUserId).get();
+        
+        if (doc.exists && doc.data() != null) {
+          final datosFirestore = doc.data()!;
+          print('✅ Encontrado en Firestore');
+          
+          // Verificar UID en los datos
+          final uidEnDatos = datosFirestore['uid']?.toString() ?? 
+                            datosFirestore['uid_firebase']?.toString();
+          
+          print('🔍 Verificando UID en datos:');
+          print('   - UID esperado: $currentUserId');
+          print('   - UID en datos: $uidEnDatos');
+          print('   - Coinciden: ${uidEnDatos == currentUserId}');
+          
+          if (uidEnDatos == currentUserId) {
+            _usuario = datosFirestore;
+            _hasError = false;
+            print('🎯 Datos asignados correctamente para usuario: $currentUserId');
+          } else {
+            print('❌ Los datos no corresponden al usuario actual');
+            _hasError = true;
+            _usuario = null;
+          }
+        } else {
+          print('❌ No encontrado en Firestore');
+          _hasError = true;
+          _usuario = null;
+        }
+      } else {
+        print('❌ No hay usuario autenticado en Firebase');
+        _hasError = true;
+        _usuario = null;
+      }
+    } catch (e, stackTrace) {
+      print('❌ Error cargando perfil: $e');
+      print('📋 Stack trace: $stackTrace');
+      _hasError = true;
+      _usuario = null;
+    } finally {
+      print('🏁 _cargarUsuario() finalizado');
+      print('   - isLoading: false');
+      print('   - hasError: $_hasError');
+      print('   - usuario: ${_usuario != null ? "PRESENTE" : "NULO"}');
+      print('   - currentUserId en VM: $_currentUserId');
+      
+      if (_usuario != null) {
+        print('📊 Datos del usuario:');
+        _usuario!.forEach((key, value) {
+          print('   - $key: $value');
+        });
+      }
+      
+      _isLoading = false;
+      notifyListeners();
+      print('🔔 notifyListeners() llamado');
+    }
+  }
+
   Future<void> logout(BuildContext context) async {
     try {
-      await _dbHelper.deleteEstudianteActual();
       await _auth.signOut();
+      _resetState();
 
       if (context.mounted) {
         context.go(RouteNames.login);

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:horas2/Frontend/Modules/HomeScreen/ViewModels/AllModulesViewModel.dart';
 import 'package:horas2/Frontend/Modules/HomeScreen/Screens/DetallesModules/ModuleDB/ModuloDetailScreen.dart';
-import 'package:horas2/Frontend/Modules/HomeScreen/widget/Sections/TOOLS/Cards/ModuleCardWidget.dart';
+import 'package:horas2/Frontend/Modules/HomeScreen/widget/Sections/TOOLS/Cards/SubScreenCardModule.dart';
 import 'package:horas2/Frontend/Modules/HomeScreen/widget/Sections/TOOLS/EmptyModulesState.dart';
 import 'package:horas2/Frontend/Modules/HomeScreen/widget/Sections/TOOLS/FilterBottomSheet.dart';
 import 'package:horas2/Frontend/Modules/HomeScreen/widget/Sections/TOOLS/ModulesHeaderSection.dart';

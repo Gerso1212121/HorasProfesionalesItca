@@ -5,6 +5,7 @@ import 'package:horas2/Frontend/Modules/HomeScreen/widget/MascotaFlotante.dart';
 import 'package:horas2/Frontend/Modules/HomeScreen/widget/Header/HomeHeaderSection.dart';
 import 'package:horas2/Frontend/Modules/HomeScreen/widget/Sections/Chats/HomeChatSuggestionsSection.dart';
 import 'package:horas2/Frontend/Modules/HomeScreen/widget/Sections/TOOLS/HomeToolsSection.dart';
+import 'package:horas2/Frontend/Modules/Profile/Screens/ProfileScreen.dart';
 import 'package:provider/provider.dart';
 import 'package:horas2/Frontend/Modules/Diary/Screens/DiarioScreen.dart';
 
@@ -61,27 +62,14 @@ class _HomeScreenContent extends StatelessWidget {
       backgroundColor: const Color(0xFFF2FFFF),
       body: CustomScrollView(
         controller: scrollController,
-        physics: const BouncingScrollPhysics(),
+        physics: const ClampingScrollPhysics(),
         slivers: [
-          // Header con efecto parallax
-          SliverAppBar(
-            expandedHeight: 600, // Altura expandida del header
-            collapsedHeight: 70,
-            backgroundColor: Colors.transparent,
-            surfaceTintColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            elevation: 0,
-            pinned: true, // Se mantiene visible
-            stretch: true, // Permite estirar
-            flexibleSpace: FlexibleSpaceBar(
-              collapseMode: CollapseMode.parallax, // Efecto parallax
-              stretchModes: const [
-                StretchMode.blurBackground,
-                StretchMode.blurBackground,
-              ],
-              background: const HomeHeaderSection(),
-            ),
-          ),
+ 
+
+    // ✅ HEADER DINÁMICO
+    const SliverToBoxAdapter(
+      child: HomeHeaderSection(),
+    ),
 
           // Contenido principal
           SliverToBoxAdapter(
@@ -117,7 +105,7 @@ class _HomeScreenContent extends StatelessWidget {
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            const DiarioScreen(),
+            const ProfileScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           const begin = Offset(1.0, 0.0);
           const end = Offset.zero;

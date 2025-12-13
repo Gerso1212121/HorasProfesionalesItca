@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:horas2/Frontend/Modules/Diary/Screens/DiarioScreen.dart';
+import 'package:horas2/Frontend/Modules/Excercises/Screens/ExcersicesScreen.dart';
 import 'package:horas2/Frontend/Modules/HomeScreen/HomeScreen.dart';
 import 'package:horas2/Frontend/Modules/Profile/Screens/ProfileScreen.dart';
 import 'package:horas2/Frontend/widgets/NavigatorBottom.dart';
@@ -15,9 +17,8 @@ class _DashboardState extends State<Dashboard> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
-    //const ChatBotScreen(),
-    //const EjerciciosScreen(),
-    //const DiarioScreen(),
+     DiarioScreen(),
+    const ExcersicesScreen(),
     const ProfileScreen(),
   ];
 

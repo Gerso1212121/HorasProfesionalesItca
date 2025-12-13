@@ -11,6 +11,7 @@ import 'package:horas2/Frontend/Modules/HomeScreen/ViewModels/AllModulesViewMode
 import 'package:horas2/Frontend/Modules/HomeScreen/ViewModels/VMcards/HomeCardsVM.dart';
 import 'package:horas2/Frontend/Modules/NotWifi/NoConnectionScreen.dart';
 import 'package:horas2/Frontend/Modules/Profile/ViewModels/AnimationStateVM.dart';
+import 'package:horas2/Frontend/Modules/Profile/ViewModels/ProfileVM.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 
@@ -51,6 +52,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AnimationStateVM()),
         ChangeNotifierProvider(create: (_) => PsychologyViewModel()),
         ChangeNotifierProvider(create: (_) => AllModulesViewModel()),
+        ChangeNotifierProvider(create: (_) => ProfileVM()),
       ],
       child: const MyApp(),
     ),

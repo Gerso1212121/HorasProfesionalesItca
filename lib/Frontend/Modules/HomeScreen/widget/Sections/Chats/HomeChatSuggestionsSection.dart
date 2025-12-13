@@ -28,7 +28,7 @@ class HomeChatSuggestionsSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         SizedBox(
-          height: 320,
+          height: 250,
           child: viewModel.isLoadingSuggestions
               ? const ChatSuggestionsSkeleton()
               : _buildChatSuggestionsList(),
@@ -60,7 +60,6 @@ class HomeChatSuggestionsSection extends StatelessWidget {
           ),
           child: ConversationSparkCard(
             title: sug.topic,
-            description: sug.summary,
             cardColor: sug.backgroundColor,
             symbol: sug.emojiIcon,
             iconAsset: sug.customIcon,
