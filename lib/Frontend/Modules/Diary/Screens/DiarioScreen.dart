@@ -50,7 +50,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
       'titulo': 'Cena familiar especial',
       'contenido': 'Hoy nos reunimos toda la familia después de mucho tiempo. Fue emocionante ver a todos juntos y compartir historias...',
       'emoji': '❤️',
-      'imagenes': 4,
+      'imagenes': 1,
       'hora': '8:20 PM',
       'colorSet': 3,
     },
@@ -69,39 +69,38 @@ class _DiarioScreenState extends State<DiarioScreen> {
   // Conjuntos de colores para las tarjetas
   final List<Map<String, dynamic>> _colorSets = [
     {
-      'primary': Color(0xFF4285F4),
-      'light': Color(0xFFE8F0FE),
-      'accent': Color(0xFFD2E3FC),
-      'text': Color(0xFF1A73E8),
-      'badge': Color(0xFF4285F4),
+      'primary': const Color(0xFF4285F4),
+      'light':const Color(0xFFE8F0FE),
+      'accent':const Color(0xFFD2E3FC),
+      'text':const Color(0xFF1A73E8),
+      'badge':const Color(0xFF4285F4),
     },
     {
-      'primary': Color(0xFF34A853),
-      'light': Color(0xFFE6F4EA),
-      'accent': Color(0xFFCEEAD6),
-      'text': Color(0xFF188038),
-      'badge': Color(0xFF34A853),
+      'primary': const Color(0xFF34A853),
+      'accent': const Color(0xFFCEEAD6),
+      'text': const Color(0xFF188038),
+      'badge': const Color(0xFF34A853),
     },
     {
-      'primary': Color(0xFFFBBC05),
-      'light': Color(0xFFFEF7E0),
-      'accent': Color(0xFFFEEFC3),
-      'text': Color(0xFFF9AB00),
-      'badge': Color(0xFFFBBC05),
+      'primary': const Color(0xFFFBBC05),
+      'light': const Color(0xFFFEF7E0),
+      'accent': const Color(0xFFFEEFC3),
+      'text': const Color(0xFFF9AB00),
+      'badge': const Color(0xFFFBBC05),
     },
     {
-      'primary': Color(0xFFEA4335),
-      'light': Color(0xFFFCE8E6),
-      'accent': Color(0xFFFAD2CF),
-      'text': Color(0xFFD93025),
-      'badge': Color(0xFFEA4335),
+      'primary': const Color(0xFFEA4335),
+      'light': const Color(0xFFFCE8E6),
+      'accent': const Color(0xFFFAD2CF),
+      'text': const Color(0xFFD93025),
+      'badge': const Color(0xFFEA4335),
     },
     {
-      'primary': Color(0xFF8E24AA),
-      'light': Color(0xFFF3E5F5),
-      'accent': Color(0xFFE1BEE7),
-      'text': Color(0xFF7B1FA2),
-      'badge': Color(0xFF8E24AA),
+      'primary': const Color(0xFF8E24AA),
+      'light': const Color(0xFFF3E5F5),
+      'accent': const Color(0xFFE1BEE7),
+      'text': const Color(0xFF7B1FA2),
+      'badge': const Color(0xFF8E24AA),
     },
   ];
 
@@ -110,7 +109,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFF),
       body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
+        physics: const ClampingScrollPhysics(),
         slivers: [
           // Header elegante
           SliverAppBar(
@@ -119,7 +118,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
             elevation: 0,
             floating: true,
             snap: true,
-            expandedHeight: 140,
+            expandedHeight: 80,
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: BoxDecoration(
@@ -171,10 +170,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
             ],
           ),
 
-          // Filtros y estadísticas
-          SliverToBoxAdapter(
-            child: _buildStatsHeader(),
-          ),
+ 
 
           // Lista de entradas
           if (_entradas.isEmpty)
@@ -183,7 +179,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
             )
           else
             SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
@@ -194,10 +190,6 @@ class _DiarioScreenState extends State<DiarioScreen> {
               ),
             ),
 
-          // Espacio al final
-          const SliverToBoxAdapter(
-            child: SizedBox(height: 100),
-          ),
         ],
       ),
 
@@ -231,155 +223,7 @@ floatingActionButton: FloatingActionButton.extended(
     );
   }
 
-  Widget _buildStatsHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Estadísticas
-          Row(
-            children: [
-              _buildStatItem(
-                icon: Icons.book_rounded,
-                value: _entradas.length.toString(),
-                label: 'Entradas',
-                color: const Color(0xFF4285F4),
-              ),
-              const SizedBox(width: 16),
-              _buildStatItem(
-                icon: Icons.photo_library_rounded,
-                value: _entradas
-                    .fold(0, (sum, entry) => sum + (entry['imagenes'] as int))
-                    .toString(),
-                label: 'Fotos',
-                color: const Color(0xFF34A853),
-              ),
-              const SizedBox(width: 16),
-              _buildStatItem(
-                icon: Icons.emoji_emotions_rounded,
-                value: _entradas.length > 0
-                    ? _entradas.last['emoji']
-                    : '😊',
-                label: 'Hoy',
-                color: const Color(0xFFFBBC05),
-              ),
-            ],
-          ),
 
-          const SizedBox(height: 20),
-
-          // Título de sección
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Tus recuerdos',
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF1A237E),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F0FE),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.filter_list_rounded,
-                      size: 14,
-                      color: const Color(0xFF4285F4),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Filtrar',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF4285F4),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem({
-    required IconData icon,
-    required String value,
-    required String label,
-    required Color color,
-  }) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.grey[100]!,
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                size: 18,
-                color: color,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    value,
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF1A237E),
-                    ),
-                  ),
-                  Text(
-                    label,
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildDiaryCard(Map<String, dynamic> entry) {
     final colors = _colorSets[entry['colorSet']];

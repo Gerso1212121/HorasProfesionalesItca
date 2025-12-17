@@ -25,26 +25,30 @@ class SedeAlertService {
   };
 
   /// Normaliza el nombre de la sede
-  static String normalizarSede(String sede) {
-    String normalizada = sede.toLowerCase().trim();
+/// Normaliza el nombre de la sede
+static String normalizarSede(String sede) {
+  String normalizada = sede.toLowerCase().trim();
 
-    switch (normalizada) {
-      case 'san miguel':
-        return 'san miguel';
-      case 'la unión':
-      case 'la union':
-        return 'la unión';
-      case 'zacatecoluca':
-      case 'zacate coluca':
-        return 'zacatecoluca';
-      case 'santa tecla':
-        return 'santa tecla';
-      case 'sede central':
-        return 'sede central';
-      default:
-        return normalizada;
-    }
-  }
+  // Mapear nombres alternativos
+  final Map<String, String> mapeoSedes = {
+    'sede san miguel': 'san miguel',
+    'san miguel': 'san miguel',
+    'sede la unión': 'la unión',
+    'sede la union': 'la unión',
+    'la unión': 'la unión',
+    'la union': 'la unión',
+    'sede zacatecoluca': 'zacatecoluca',
+    'zacatecoluca': 'zacatecoluca',
+    'zacate coluca': 'zacatecoluca',
+    'sede santa tecla': 'santa tecla',
+    'santa tecla': 'santa tecla',
+    'sede central': 'sede central',
+    'central': 'sede central',
+  };
+
+  // Buscar en el mapeo o devolver la normalizada
+  return mapeoSedes[normalizada] ?? normalizada;
+}
 
   /// Obtiene la sede que administra un email específico
   static String? getSedePorAdminEmail(String adminEmail) {
@@ -99,10 +103,10 @@ Respuesta:''';
       final response = await _llamarOpenAI(prompt);
       final respuesta = response.toLowerCase().trim();
 
-      developer.log('🤖 IA evaluó abuso sexual: "$mensaje" → $respuesta');
+      print('🤖 IA evaluó abuso sexual: "$mensaje" → $respuesta');
       return respuesta == 'si';
     } catch (e) {
-      developer.log('❌ Error evaluando abuso sexual con IA: $e');
+      print('❌ Error evaluando abuso sexual con IA: $e');
       return false; // En caso de error, no generar alerta
     }
   }
@@ -134,10 +138,10 @@ Respuesta:''';
       final response = await _llamarOpenAI(prompt);
       final respuesta = response.toLowerCase().trim();
 
-      developer.log('🤖 IA evaluó violencia: "$mensaje" → $respuesta');
+      print('🤖 IA evaluó violencia: "$mensaje" → $respuesta');
       return respuesta == 'si';
     } catch (e) {
-      developer.log('❌ Error evaluando violencia con IA: $e');
+      print('❌ Error evaluando violencia con IA: $e');
       return false; // En caso de error, no generar alerta
     }
   }
@@ -168,10 +172,10 @@ Respuesta:''';
       final response = await _llamarOpenAI(prompt);
       final respuesta = response.toLowerCase().trim();
 
-      developer.log('🤖 IA evaluó depresión: "$mensaje" → $respuesta');
+      print('🤖 IA evaluó depresión: "$mensaje" → $respuesta');
       return respuesta == 'si';
     } catch (e) {
-      developer.log('❌ Error evaluando depresión con IA: $e');
+      print('❌ Error evaluando depresión con IA: $e');
       return false; // En caso de error, no generar alerta
     }
   }
@@ -203,10 +207,10 @@ Respuesta:''';
       final response = await _llamarOpenAI(prompt);
       final respuesta = response.toLowerCase().trim();
 
-      developer.log('🤖 IA evaluó suicidio: "$mensaje" → $respuesta');
+      print('🤖 IA evaluó suicidio: "$mensaje" → $respuesta');
       return respuesta == 'si';
     } catch (e) {
-      developer.log('❌ Error evaluando suicidio con IA: $e');
+      print('❌ Error evaluando suicidio con IA: $e');
       return false; // En caso de error, no generar alerta
     }
   }
@@ -220,7 +224,7 @@ Respuesta:''';
       ]);
       return response.trim();
     } catch (e) {
-      developer.log('❌ Error llamando a OpenAI: $e');
+      print('❌ Error llamando a OpenAI: $e');
       return "NO"; // En caso de error, no generar alerta
     }
   }
@@ -254,7 +258,7 @@ Respuesta:''';
       // Solo considerar videojuego si la respuesta es explícitamente "si"
       return respuesta == 'si';
     } catch (e) {
-      developer.log('❌ Error evaluando contexto videojuegos con IA: $e');
+      print('❌ Error evaluando contexto videojuegos con IA: $e');
       return false; // En caso de error, no bloquear alertas
     }
   }
@@ -266,7 +270,7 @@ Respuesta:''';
     // PRIMERO: Verificar si es contexto de videojuegos usando IA
     final esVideojuegos = await _esContextoVideojuegosConIA(mensaje);
     if (esVideojuegos) {
-      developer.log(
+      print(
           '🎮 Contexto de videojuegos detectado por IA - NO evaluando alertas');
       return tiposAlerta; // No generar alertas en contexto de videojuegos
     }
@@ -312,24 +316,24 @@ Respuesta:''';
     String? usuarioTelefono,
   }) async {
     try {
-      developer.log('🔍 ========== CREAR ALERTA ==========');
-      developer.log('🔍 Sede recibida: "$sede"');
-      developer.log('🔍 Tipo de alerta: "$tipoAlerta"');
-      developer.log('🔍 Usuario email: "$usuarioEmail"');
-      developer.log('🔍 Usuario nombre: "$usuarioNombre"');
+      print('🔍 ========== CREAR ALERTA ==========');
+      print('🔍 Sede recibida: "$sede"');
+      print('🔍 Tipo de alerta: "$tipoAlerta"');
+      print('🔍 Usuario email: "$usuarioEmail"');
+      print('🔍 Usuario nombre: "$usuarioNombre"');
 
       // Normalizar la sede antes de buscar el admin
       final sedeNormalizada =
           sede != null && sede.isNotEmpty ? normalizarSede(sede) : null;
-      developer.log('🔍 Sede normalizada: "$sedeNormalizada"');
+      print('🔍 Sede normalizada: "$sedeNormalizada"');
 
       final adminEmail = getAdminEmailPorSede(sedeNormalizada);
-      developer.log('🔍 Admin email encontrado: "$adminEmail"');
+      print('🔍 Admin email encontrado: "$adminEmail"');
 
       if (adminEmail == null) {
-        developer.log(
+        print(
             '❌ ERROR: No se encontró administrador para la sede: "$sede" (normalizada: "$sedeNormalizada")');
-        developer.log(
+        print(
             '🔍 Sedes disponibles en mapa: ${_adminEmailsPorSede.keys.toList()}');
         throw Exception('No se encontró administrador para la sede: $sede');
       }
@@ -348,10 +352,10 @@ Respuesta:''';
         'resumen': _generarResumenAlerta(mensaje, tipoAlerta),
       };
 
-      developer.log('📝 Intentando crear alerta en Firestore...');
-      developer.log('📝 Datos completos de alerta:');
+      print('📝 Intentando crear alerta en Firestore...');
+      print('📝 Datos completos de alerta:');
       alerta.forEach((key, value) {
-        developer.log('   $key: $value');
+        print('   $key: $value');
       });
 
       final docRef = await FirebaseFirestore.instance
@@ -359,18 +363,18 @@ Respuesta:''';
           .add(alerta)
           .timeout(const Duration(seconds: 10));
 
-      developer.log('🚨 ========== ALERTA CREADA EXITOSAMENTE ==========');
-      developer.log('🚨 Tipo: $tipoAlerta');
-      developer.log('🚨 Sede: "$sedeNormalizada"');
-      developer.log('📧 Admin: $adminEmail');
-      developer.log('🆔 ID del documento: ${docRef.id}');
-      developer.log('✅ ============================================');
+      print('🚨 ========== ALERTA CREADA EXITOSAMENTE ==========');
+      print('🚨 Tipo: $tipoAlerta');
+      print('🚨 Sede: "$sedeNormalizada"');
+      print('📧 Admin: $adminEmail');
+      print('🆔 ID del documento: ${docRef.id}');
+      print('✅ ============================================');
     } catch (e, stackTrace) {
-      developer.log('❌ ========== ERROR CREANDO ALERTA ==========');
-      developer.log('❌ Error: $e');
-      developer.log('❌ Tipo: ${e.runtimeType}');
-      developer.log('❌ Stack trace: $stackTrace');
-      developer.log('❌ ============================================');
+      print('❌ ========== ERROR CREANDO ALERTA ==========');
+      print('❌ Error: $e');
+      print('❌ Tipo: ${e.runtimeType}');
+      print('❌ Stack trace: $stackTrace');
+      print('❌ ============================================');
       // Re-lanzar el error para que se pueda manejar en el nivel superior
       rethrow;
     }
@@ -401,9 +405,9 @@ Respuesta:''';
     String? usuarioTelefono,
     List<Map<String, dynamic>>? historialMensajes,
   }) async {
-    developer.log('🔍 PROCESANDO MENSAJE PARA ALERTA: "$mensaje"');
-    developer.log('🏢 Sede: $sede');
-    developer.log('👤 Usuario: $usuarioEmail');
+    print('🔍 PROCESANDO MENSAJE PARA ALERTA: "$mensaje"');
+    print('🏢 Sede: $sede');
+    print('👤 Usuario: $usuarioEmail');
 
     // Crear mensaje con contexto si hay historial
     String mensajeConContexto = mensaje;
@@ -415,19 +419,19 @@ Respuesta:''';
           .join('\n');
       mensajeConContexto =
           'CONTEXTO DE CONVERSACIÓN:\n$contexto\n\nMENSAJE ACTUAL: $mensaje';
-      developer.log('📝 Mensaje con contexto: $mensajeConContexto');
+      print('📝 Mensaje con contexto: $mensajeConContexto');
     }
 
     // Detectar el tipo de alerta con prioridad específica
     final tiposAlerta = await detectarTiposAlerta(mensajeConContexto);
-    developer.log('🎯 Tipos de alerta detectados: $tiposAlerta');
+    print('🎯 Tipos de alerta detectados: $tiposAlerta');
 
     if (tiposAlerta.isNotEmpty) {
       // Crear una alerta por cada tipo detectado
       int alertasCreadas = 0;
       for (final tipoAlerta in tiposAlerta) {
         try {
-          developer.log('✅ Creando alerta de tipo: $tipoAlerta');
+          print('✅ Creando alerta de tipo: $tipoAlerta');
           await crearAlerta(
             mensaje: mensaje,
             sede: sede,
@@ -437,17 +441,17 @@ Respuesta:''';
             usuarioTelefono: usuarioTelefono,
           );
           alertasCreadas++;
-          developer.log('✅ Alerta de tipo $tipoAlerta creada exitosamente');
+          print('✅ Alerta de tipo $tipoAlerta creada exitosamente');
         } catch (e) {
-          developer.log('❌ Error al crear alerta de tipo $tipoAlerta: $e');
+          print('❌ Error al crear alerta de tipo $tipoAlerta: $e');
           // Continuar con las demás alertas aunque una falle
         }
       }
-      developer.log(
+      print(
           '📊 Total de alertas procesadas: ${tiposAlerta.length}, creadas exitosamente: $alertasCreadas');
     } else {
-      developer.log('❌ No se crean alertas - no se detectaron tipos de riesgo');
-      developer.log('🔍 Evaluando cada tipo individualmente para debug:');
+      print('❌ No se crean alertas - no se detectaron tipos de riesgo');
+      print('🔍 Evaluando cada tipo individualmente para debug:');
 
       // Debug: evaluar cada tipo individualmente
       final esViolencia = await _evaluarViolenciaConIA(mensaje);
@@ -455,10 +459,10 @@ Respuesta:''';
       final esSuicidio = await _evaluarSuicidioConIA(mensaje);
       final esDepresion = await _evaluarDepresionConIA(mensaje);
 
-      developer.log('🔍 Debug - Violencia: $esViolencia');
-      developer.log('🔍 Debug - Abuso Sexual: $esAbusoSexual');
-      developer.log('🔍 Debug - Suicidio: $esSuicidio');
-      developer.log('🔍 Debug - Depresión: $esDepresion');
+      print('🔍 Debug - Violencia: $esViolencia');
+      print('🔍 Debug - Abuso Sexual: $esAbusoSexual');
+      print('🔍 Debug - Suicidio: $esSuicidio');
+      print('🔍 Debug - Depresión: $esDepresion');
     }
   }
 
@@ -467,35 +471,35 @@ Respuesta:''';
   static Future<List<Map<String, dynamic>>> getAlertasPorAdmin(
       String adminEmail) async {
     try {
-      developer.log('🔍 ========== BUSCANDO ALERTAS PARA ADMIN ==========');
-      developer.log('🔍 Admin email recibido: "$adminEmail"');
+      print('🔍 ========== BUSCANDO ALERTAS PARA ADMIN ==========');
+      print('🔍 Admin email recibido: "$adminEmail"');
 
       // Determinar la sede que administra este email
       String? sedeAdministrada = getSedePorAdminEmail(adminEmail);
-      developer.log('🏢 Sede administrada por este email: "$sedeAdministrada"');
+      print('🏢 Sede administrada por este email: "$sedeAdministrada"');
 
       // Obtener todas las alertas
       final querySnapshot =
           await FirebaseFirestore.instance.collection('alertas_sede').get();
 
-      developer.log(
+      print(
           '📊 Total de alertas en Firestore: ${querySnapshot.docs.length}');
 
       // Log de todas las alertas para debug
       for (var doc in querySnapshot.docs) {
         final data = doc.data();
-        developer.log('📋 Alerta ID: ${doc.id}');
-        developer.log('   - admin_email: "${data['admin_email']}"');
-        developer.log('   - sede: "${data['sede']}"');
-        developer.log('   - tipo: "${data['tipo_alerta']}"');
-        developer.log('   - usuario: "${data['usuario_nombre']}"');
+        print('📋 Alerta ID: ${doc.id}');
+        print('   - admin_email: "${data['admin_email']}"');
+        print('   - sede: "${data['sede']}"');
+        print('   - tipo: "${data['tipo_alerta']}"');
+        print('   - usuario: "${data['usuario_nombre']}"');
       }
 
       // Si NO se encontró la sede administrada, mostrar TODAS las alertas como fallback
       if (sedeAdministrada == null) {
-        developer.log(
+        print(
             '⚠️ NO SE ENCONTRÓ SEDE PARA ESTE ADMIN - MOSTRANDO TODAS LAS ALERTAS');
-        developer.log(
+        print(
             '💡 Agrega el email "$adminEmail" al mapa _sedesPorAdminReal en sede_alert_service.dart');
 
         final todasLasAlertas = querySnapshot.docs.map((doc) {
@@ -511,9 +515,9 @@ Respuesta:''';
           return fechaB.compareTo(fechaA);
         });
 
-        developer.log('📊 ========== RESULTADO (TODAS) ==========');
-        developer.log('📊 Alertas mostradas: ${todasLasAlertas.length}');
-        developer.log('✅ ====================================');
+        print('📊 ========== RESULTADO (TODAS) ==========');
+        print('📊 Alertas mostradas: ${todasLasAlertas.length}');
+        print('✅ ====================================');
         return todasLasAlertas;
       }
 
@@ -538,13 +542,13 @@ Respuesta:''';
 
         final coincide = coincidePorSede || coincidePorEmail;
 
-        developer.log('🔍 Evaluando alerta:');
-        developer.log('   - Sede de la alerta: "$alertaSede"');
-        developer.log('   - Sede administrada: "$sedeAdministrada"');
-        developer.log('   - Email de la alerta: "$alertaAdminEmail"');
-        developer.log('   - Email del admin: "$adminEmail"');
-        developer.log('   - Coincide por sede: $coincidePorSede');
-        developer.log('   - Coincide por email: $coincidePorEmail');
+        print('🔍 Evaluando alerta:');
+        print('   - Sede de la alerta: "$alertaSede"');
+        print('   - Sede administrada: "$sedeAdministrada"');
+        print('   - Email de la alerta: "$alertaAdminEmail"');
+        print('   - Email del admin: "$adminEmail"');
+        print('   - Coincide por sede: $coincidePorSede');
+        print('   - Coincide por email: $coincidePorEmail');
         developer
             .log('   - RESULTADO: ${coincide ? "✅ INCLUIDA" : "❌ EXCLUIDA"}');
 
@@ -558,13 +562,13 @@ Respuesta:''';
         return fechaB.compareTo(fechaA);
       });
 
-      developer.log('📊 ========== RESULTADO ==========');
-      developer.log('📊 Alertas encontradas: ${alertas.length}');
-      developer.log('✅ ====================================');
+      print('📊 ========== RESULTADO ==========');
+      print('📊 Alertas encontradas: ${alertas.length}');
+      print('✅ ====================================');
       return alertas;
     } catch (e, stackTrace) {
-      developer.log('❌ Error obteniendo alertas: $e');
-      developer.log('❌ Stack trace: $stackTrace');
+      print('❌ Error obteniendo alertas: $e');
+      print('❌ Stack trace: $stackTrace');
       return [];
     }
   }
@@ -584,7 +588,7 @@ Respuesta:''';
         return data;
       }).toList();
     } catch (e) {
-      developer.log('❌ Error obteniendo todas las alertas: $e');
+      print('❌ Error obteniendo todas las alertas: $e');
       return [];
     }
   }
@@ -599,9 +603,9 @@ Respuesta:''';
         'leida': true,
         'fecha_lectura': DateTime.now().toIso8601String(),
       });
-      developer.log('✅ Alerta $alertaId marcada como leída');
+      print('✅ Alerta $alertaId marcada como leída');
     } catch (e) {
-      developer.log('❌ Error marcando alerta como leída: $e');
+      print('❌ Error marcando alerta como leída: $e');
     }
   }
 
@@ -615,9 +619,9 @@ Respuesta:''';
         'leida': false,
         'fecha_lectura': null,
       });
-      developer.log('🔄 Alerta $alertaId desmarcada como leída');
+      print('🔄 Alerta $alertaId desmarcada como leída');
     } catch (e) {
-      developer.log('❌ Error desmarcando alerta como leída: $e');
+      print('❌ Error desmarcando alerta como leída: $e');
     }
   }
 
@@ -628,9 +632,9 @@ Respuesta:''';
           .collection('alertas_sede')
           .doc(alertaId)
           .delete();
-      developer.log('🗑️ Alerta $alertaId eliminada');
+      print('🗑️ Alerta $alertaId eliminada');
     } catch (e) {
-      developer.log('❌ Error eliminando alerta: $e');
+      print('❌ Error eliminando alerta: $e');
     }
   }
 
@@ -672,7 +676,7 @@ Respuesta:''';
         'alertas_leidas': alertasLeidas,
       };
     } catch (e) {
-      developer.log('❌ Error obteniendo estadísticas: $e');
+      print('❌ Error obteniendo estadísticas: $e');
       return {
         'total_alertas': 0,
         'alertas_por_sede': <String, int>{},
@@ -737,7 +741,7 @@ Respuesta:''';
         'alertas_leidas': alertasLeidas,
       };
     } catch (e) {
-      developer.log('❌ Error obteniendo estadísticas por admin: $e');
+      print('❌ Error obteniendo estadísticas por admin: $e');
       return {
         'total_alertas': 0,
         'alertas_por_sede': <String, Map<String, int>>{},

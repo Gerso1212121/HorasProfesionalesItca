@@ -61,7 +61,7 @@ dependencies:
   audioplayers: ^6.4.0
   just_audio: ^0.9.42
   audio_session: ^0.1.21
-  intl: ^0.20.2
+  intl: ^0.18.1
   #flutter_quill: ^9.3.11
   #flutter_quill_extensions: ^9.3.4
 

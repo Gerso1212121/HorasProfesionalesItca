@@ -1,70 +1,89 @@
-// lib/Frontend/Modules/Diary/model/diary_entry.dart
+// lib/Frontend/Modules/Diary/Models/DiaryEntry.dart
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:flutter_quill/flutter_quill.dart';
+import 'package:path/path.dart' as path;
+
 class DiaryEntry {
-  final String id;
-  final String title;
-  final String content;
-  final DateTime date;
-  final String emoji;
-  final List<String> images;
-  final List<ContentBlock> contentBlocks;
+  int? id;
+  String title;
+  DateTime date;
+  String mood;
+  String contentJson;
+  List<String> compressedImagePaths;
+  DateTime createdAt;
+  DateTime updatedAt;
 
   DiaryEntry({
-    required this.id,
+    this.id,
     required this.title,
-    required this.content,
     required this.date,
-    this.emoji = "😊",
-    this.images = const [],
-    this.contentBlocks = const [],
+    required this.mood,
+    required this.contentJson,
+    this.compressedImagePaths = const [],
+    required this.createdAt,
+    required this.updatedAt,
   });
 
-  factory DiaryEntry.fromMap(Map<String, dynamic> map) {
-    return DiaryEntry(
-      id: map['id'] ?? '',
-      title: map['titulo'] ?? '',
-      content: map['contenido'] ?? '',
-      date: map['fecha'] != null ? DateTime.parse(map['fecha']) : DateTime.now(),
-      emoji: map['emoji'] ?? "😊",
-      images: List<String>.from(map['images'] ?? []),
-      contentBlocks: (map['contentBlocks'] as List<dynamic>? ?? [])
-          .map((block) => ContentBlock.fromMap(block))
-          .toList(),
-    );
+  // Método para obtener el contenido como Document de Quill
+  Document getDocument() {
+    try {
+      final delta = Delta.fromJson(jsonDecode(contentJson));
+      return Document.fromDelta(delta);
+    } catch (e) {
+      return Document();
+    }
   }
 
+  // Método para convertir a mapa para SQLite
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'titulo': title,
-      'contenido': content,
-      'fecha': date.toIso8601String(),
-      'emoji': emoji,
-      'images': images,
-      'contentBlocks': contentBlocks.map((block) => block.toMap()).toList(),
+      'title': title,
+      'date': date.toIso8601String(),
+      'mood': mood,
+      'content_json': contentJson,
+      'compressed_image_paths': jsonEncode(compressedImagePaths),
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
-}
 
-class ContentBlock {
-  final String type; // "text", "image", "drawing"
-  final String value;
-
-  ContentBlock({
-    required this.type,
-    required this.value,
-  });
-
-  factory ContentBlock.fromMap(Map<String, dynamic> map) {
-    return ContentBlock(
-      type: map['type'] ?? 'text',
-      value: map['value'] ?? '',
+  // Método para crear desde mapa de SQLite
+  factory DiaryEntry.fromMap(Map<String, dynamic> map) {
+    return DiaryEntry(
+      id: map['id'],
+      title: map['title'],
+      date: DateTime.parse(map['date']),
+      mood: map['mood'],
+      contentJson: map['content_json'],
+      compressedImagePaths: List<String>.from(
+          jsonDecode(map['compressed_image_paths'] ?? '[]')),
+      createdAt: DateTime.parse(map['created_at']),
+      updatedAt: DateTime.parse(map['updated_at']),
     );
   }
 
-  Map<String, dynamic> toMap() {
-    return {
-      'type': type,
-      'value': value,
-    };
+  // Método para copiar con nuevos valores
+  DiaryEntry copyWith({
+    int? id,
+    String? title,
+    DateTime? date,
+    String? mood,
+    String? contentJson,
+    List<String>? compressedImagePaths,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return DiaryEntry(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      date: date ?? this.date,
+      mood: mood ?? this.mood,
+      contentJson: contentJson ?? this.contentJson,
+      compressedImagePaths: compressedImagePaths ?? this.compressedImagePaths,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
   }
 }

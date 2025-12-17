@@ -1,237 +1,235 @@
-// HomeScreen/ViewModels/ExerciseViewModel.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:horas2/Backend/Data/API/GPTService.dart';
 
-class ExerciseViewModel with ChangeNotifier {
+// Modelos
+import 'package:horas2/Frontend/Modules/Excercises/Data/Models/ExerciseSession.dart';
+import 'package:horas2/Frontend/Modules/Excercises/Data/Models/EjercicioModel.dart';
+
+// Servicios
+import 'package:horas2/Frontend/Modules/Excercises/Services/ProgressService.dart';
+import 'package:horas2/Frontend/Modules/Excercises/ViewModel/ExerciseService.dart';
+// import 'package:horas2/Backend/Data/API/GPTService.dart'; // Mantenemos importado si lo usas
+
+class ExerciseViewModel extends ChangeNotifier {
+  // --------------------------------------------------------
+  // 1. SERVICIOS E INICIALIZACIÓN
+  // --------------------------------------------------------
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final ExerciseService _exerciseService = ExerciseService();
   
-  // Estados
+  // NUEVO: Servicio para el progreso local
+  final ProgressService _progressService = ProgressService();
+
+  // --------------------------------------------------------
+  // 2. ESTADO DE DATOS (Supabase - Ejercicios)
+  // --------------------------------------------------------
+  List<EjercicioModel> _allExercises = [];
+  bool _isLoadingExercises = true;
+  String _error = '';
+
+  // --------------------------------------------------------
+  // 3. ESTADO DE USUARIO/UI (Teammate Logic)
+  // --------------------------------------------------------
   String? _studentName;
   bool _isLoadingName = false;
-  bool _isLoadingExerciseMessage = false;
+  bool _isLoadingMessage = false;
   String _exerciseMessage = "";
-  String _exercisePrompt = "";
   
-  // Cache
+  // Cache estático
   static String? _cachedExerciseMessage;
-  static String? _cachedStudentNameForExercise;
-  static DateTime? _cachedExerciseDate;
+  static String? _cachedStudentName;
+  static DateTime? _cachedDate;
+
+  // --------------------------------------------------------
+  // 4. NUEVO ESTADO: PROGRESO Y ESTADÍSTICAS
+  // --------------------------------------------------------
+  bool isLoadingProgress = false;
+  List<ExerciseSession> recentHistory = [];
   
-  // Getters
+  // Inicializamos mapas vacíos o con ceros
+  Map<String, dynamic> stats = {
+    'minutes': 0, 
+    'sessions': 0, 
+    'streak': 0
+  };
+  
+  Map<int, double> weeklyData = {
+    1: 0.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0, 6: 0.0, 7: 0.0
+  };
+
+  // --------------------------------------------------------
+  // 5. GETTERS
+  // --------------------------------------------------------
+  bool get isLoading => _isLoadingExercises || _isLoadingName;
+  String get error => _error;
+  
+  List<String> get categorias {
+    if (_allExercises.isEmpty) return [];
+    final categories = _allExercises.map((e) => e.categoria).toSet().toList();
+    categories.sort();
+    return categories;
+  }
+
   String? get studentName => _studentName;
-  bool get isLoadingName => _isLoadingName;
-  bool get isLoadingExerciseMessage => _isLoadingExerciseMessage;
   String get exerciseMessage => _exerciseMessage;
-  String get exercisePrompt => _exercisePrompt;
-  
-  // Constructor
+  bool get isLoadingExerciseMessage => _isLoadingMessage;
+
+  // --------------------------------------------------------
+  // 6. CONSTRUCTOR E INIT
+  // --------------------------------------------------------
   ExerciseViewModel() {
     _init();
   }
-  
+
   Future<void> _init() async {
-    await _loadStudentName();
-    
-    // Si tenemos nombre, cargar mensaje de ejercicio
-    if (_studentName != null && _studentName!.isNotEmpty) {
-      await _loadExerciseMessage();
+    // Cargamos todo lo esencial en paralelo
+    await Future.wait([
+      _loadStudentName(),
+      fetchExercises(),
+    ]);
+
+    // Generamos mensaje si tenemos nombre
+    if (_studentName != null) {
+      _loadExerciseMessage();
     }
   }
-  
-  // ================= CARGA DE NOMBRE DEL ESTUDIANTE =================
-  
+
+  // =========================================================
+  // LOGICA A: EJERCICIOS (SUPABASE)
+  // =========================================================
+
+  Future<void> fetchExercises() async {
+    _isLoadingExercises = true;
+    _error = '';
+    notifyListeners();
+
+    try {
+      // print('🏋️ Cargando ejercicios desde Supabase...');
+      final rawData = await _exerciseService.getAllExercises();
+      
+      _allExercises = rawData.map((json) => EjercicioModel.fromJson(json)).toList();
+      // print('✅ ${_allExercises.length} ejercicios cargados.');
+      
+    } catch (e) {
+      print('❌ Error cargando ejercicios: $e');
+      _error = 'No se pudieron cargar los ejercicios.';
+    } finally {
+      _isLoadingExercises = false;
+      notifyListeners();
+    }
+  }
+
+  List<EjercicioModel> getExercisesByCategory(String category) {
+    return _allExercises.where((e) => e.categoria == category).toList();
+  }
+
+  // =========================================================
+  // LOGICA B: USUARIO (FIRESTORE)
+  // =========================================================
+
   Future<void> _loadStudentName() async {
-    final currentUser = _auth.currentUser;
-    if (currentUser == null) return;
-    
-    final uid = currentUser.uid;
-    
-    // Verificar cache primero
-    if (ExerciseViewModel._userNameCache.containsKey(uid)) {
-      _studentName = ExerciseViewModel._userNameCache[uid];
-      print('✅ Nombre cargado desde cache: $_studentName');
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    if (_cachedStudentName != null) {
+      _studentName = _cachedStudentName;
       return;
     }
-    
-    // Cargar desde Firestore
+
     _isLoadingName = true;
     notifyListeners();
-    
+
     try {
-      print('📡 Obteniendo nombre desde Firestore para $uid...');
-      
-      final doc = await _firestore
-          .collection('estudiantes')
-          .doc(uid)
-          .get();
-      
+      final doc = await _firestore.collection('estudiantes').doc(user.uid).get();
       if (doc.exists) {
-        final data = doc.data();
-        final nombre = (data?['nombre'] ?? '').toString().trim();
-        
-        if (nombre.isNotEmpty) {
-          _studentName = nombre;
-          ExerciseViewModel._userNameCache[uid] = nombre;
-          print('✅ Nombre obtenido: $nombre');
-        } else {
-          print('⚠️ Documento existe pero no tiene nombre');
-          _studentName = null;
-        }
-      } else {
-        print('⚠️ No existe documento en estudiantes/$uid');
-        _studentName = null;
+        _studentName = doc.data()?['nombre']?.toString();
+        _cachedStudentName = _studentName;
       }
     } catch (e) {
-      print('❌ Error obteniendo nombre: $e');
-      _studentName = null;
+      print('❌ Error nombre estudiante: $e');
     } finally {
       _isLoadingName = false;
       notifyListeners();
     }
   }
-  
-  // ================= GENERAR MENSAJE DE EJERCICIO =================
+
+  // =========================================================
+  // LOGICA C: MENSAJES MOTIVACIONALES
+  // =========================================================
   
   Future<void> _loadExerciseMessage() async {
-    final hasName = _studentName != null && _studentName!.isNotEmpty;
-    final nombre = hasName ? _studentName! : 'estudiante';
     final today = DateTime.now();
-    final todayKey = "${today.year}-${today.month}-${today.day}";
-    
-    // Verificar cache para hoy
-    if (_shouldUseCachedExerciseMessage(nombre, todayKey)) {
+    final isSameDay = _cachedDate != null && 
+        _cachedDate!.day == today.day && 
+        _cachedDate!.month == today.month;
+
+    if (isSameDay && _cachedExerciseMessage != null) {
       _exerciseMessage = _cachedExerciseMessage!;
-      print('✅ Mensaje de ejercicio cargado desde cache: $_exerciseMessage');
       return;
     }
-    
-    // Generar nuevo mensaje
-    _isLoadingExerciseMessage = true;
+
+    _isLoadingMessage = true;
     notifyListeners();
-    
-    await _generateNewExerciseMessage(nombre, todayKey);
-  }
-  
-  bool _shouldUseCachedExerciseMessage(String currentNombre, String todayKey) {
-    if (_cachedExerciseMessage == null || 
-        _cachedStudentNameForExercise == null || 
-        _cachedExerciseDate == null) {
-      return false;
-    }
-    
-    if (_cachedStudentNameForExercise != currentNombre) {
-      return false;
-    }
-    
-    final cachedDateKey = "${_cachedExerciseDate!.year}-${_cachedExerciseDate!.month}-${_cachedExerciseDate!.day}";
-    if (cachedDateKey != todayKey) {
-      print('🔄 Mensaje en cache es de ayer, generando nuevo para hoy');
-      return false;
-    }
-    
-    return true;
-  }
-  
-  Future<void> _generateNewExerciseMessage(String nombre, String todayKey) async {
+
     try {
-      final hasName = _studentName != null && _studentName!.isNotEmpty;
-      
-      String prompt;
-      
-      if (hasName) {
-        prompt = '''
-Eres un psicólogo estudiantil motivacional. Genera un mensaje breve y alentador para ${_studentName} para invitarlo a realizar un ejercicio de bienestar emocional.
+      // Fallback temporal o lógica GPT
+      final msg = _studentName != null 
+          ? "$_studentName, ¿listo para fortalecer tu mente hoy?" 
+          : "Tu bienestar es prioridad. ¡Comencemos!";
 
-IMPORTANTE:
-- Usa SOLO el nombre "${_studentName}" exactamente así
-- Máximo 40 caracteres
-- Tono cálido, cercano y motivador
-- Incluye una invitación directa a hacer un ejercicio
-- NO uses comillas
-- NO digas "Hola" ni saludes
-- Dirígete directamente a ${_studentName}
-- Ejemplo: "${_studentName}, ¿listo para un ejercicio que te ayude a reflexionar hoy?"''';
-      } else {
-        prompt = '''
-Eres un psicólogo estudiantil motivacional. Genera un mensaje breve y alentador para estudiantes invitándolos a realizar un ejercicio de bienestar emocional.
-
-IMPORTANTE:
-- NO uses ningún nombre de persona
-- Máximo 40 caracteres
-- Tono cálido, cercano y motivador
-- Incluye una invitación directa a hacer un ejercicio
-- NO uses comillas
-- NO digas "Hola" ni saludes
-- Ejemplo: "¿Listo para un ejercicio que te ayude a reflexionar hoy?"''';
-      }
+      _exerciseMessage = msg;
+      _cachedExerciseMessage = msg;
+      _cachedDate = today;
       
-      _exercisePrompt = prompt;
-      
-      final respuesta = await GPTService.getResponse([
-        {
-          "role": "system",
-          "content": hasName
-            ? "Eres un psicólogo estudiantil que escribe mensajes breves y motivadores para invitar a estudiantes a realizar ejercicios de bienestar emocional. Usas el nombre real del estudiante."
-            : "Eres un psicólogo estudiantil que escribe mensajes breves y motivadores generales para invitar a estudiantes a realizar ejercicios de bienestar emocional."
-        },
-        {"role": "user", "content": prompt}
-      ]);
-      
-      final mensajeGenerado = respuesta.trim();
-      
-      if (mensajeGenerado.isNotEmpty) {
-        // Actualizar cache
-        _cachedExerciseMessage = mensajeGenerado;
-        _cachedStudentNameForExercise = nombre;
-        _cachedExerciseDate = DateTime.now();
-        
-        // Actualizar estado
-        _exerciseMessage = mensajeGenerado;
-        print('💬 Nuevo mensaje de ejercicio generado: $_exerciseMessage');
-      } else {
-        _fallbackToDefaultExerciseMessage(hasName);
-      }
     } catch (e) {
-      print('❌ Error generando mensaje de ejercicio: $e');
-      _fallbackToDefaultExerciseMessage(_studentName != null && _studentName!.isNotEmpty);
+      _exerciseMessage = "¡Tómate un momento para respirar!";
     } finally {
-      _isLoadingExerciseMessage = false;
+      _isLoadingMessage = false;
       notifyListeners();
     }
   }
-  
-  void _fallbackToDefaultExerciseMessage(bool hasName) {
-    _exerciseMessage = hasName
-      ? "${_studentName}, ¿te animas a un ejercicio de reflexión hoy?"
-      : "¿Listo para un ejercicio de bienestar emocional hoy?";
-  }
-  
-  // Forzar recarga del mensaje
-  Future<void> refreshExerciseMessage() async {
-    if (_studentName != null && _studentName!.isNotEmpty) {
-      await _generateNewExerciseMessage(_studentName!, 
-        "${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}");
+
+  // =========================================================
+  // LOGICA D: NUEVO PROGRESO (LOCAL STORAGE)
+  // =========================================================
+
+  // Método para cargar datos (Llamar al abrir la pantalla de progreso)
+  Future<void> loadProgressData() async {
+    isLoadingProgress = true;
+    // notifyListeners(); // Descomentar si quieres ver spinner inmediato
+    
+    try {
+      final history = await _progressService.getHistory();
+      final statistics = await _progressService.getStats();
+      final weekly = await _progressService.getWeeklyActivity();
+
+      recentHistory = history;
+      stats = statistics;
+      weeklyData = weekly;
+    } catch (e) {
+      debugPrint("Error cargando progreso: $e");
+    } finally {
+      isLoadingProgress = false;
+      notifyListeners();
     }
   }
-  
-  // Cache estático para nombres
-  static Map<String, String> _userNameCache = {};
-  
-  // Limpiar cache
-  static void clearCache() {
-    _cachedExerciseMessage = null;
-    _cachedStudentNameForExercise = null;
-    _cachedExerciseDate = null;
-    _userNameCache.clear();
-    print('🧹 Cache de ExerciseViewModel limpiado');
-  }
-  
-  @override
-  void dispose() {
-    super.dispose();
+
+  // Método para registrar ejercicio completado
+  Future<void> completeExercise(String title, String category, int minutes) async {
+    final newSession = ExerciseSession(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: title,
+      category: category,
+      date: DateTime.now(),
+      durationMinutes: minutes,
+    );
+
+    await _progressService.saveSession(newSession);
+    
+    // Recargar datos para actualizar la UI si estamos viendo el progreso
+    await loadProgressData(); 
   }
 }

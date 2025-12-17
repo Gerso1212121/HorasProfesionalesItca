@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:developer' as developer;
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:horas2/Frontend/Modules/IABotScreen/MOdels/mensajes.dart';
 import 'package:horas2/Frontend/Modules/IABotScreen/MOdels/sesionchat.dart';
@@ -40,6 +41,14 @@ class FirebaseChatStorage {
       developer.log('📝 Fecha: ${sesion.fecha}');
       developer.log('📝 Mensajes: ${sesion.mensajes.length}');
       developer.log('📝 Título dinámico: $tituloDinamico');
+
+      // DEBUG: Verificar contenido de los mensajes
+      developer.log('🔍 DEBUG - Contenido de mensajes a guardar:');
+      for (int i = 0; i < min(sesion.mensajes.length, 3); i++) {
+        final msg = sesion.mensajes[i];
+        developer.log(
+            '   [$i] ${msg.emisor}: ${msg.contenido.length > 50 ? "${msg.contenido.substring(0, 50)}..." : msg.contenido}');
+      }
 
       // Intentar guardar en Firestore
       await _firestore
