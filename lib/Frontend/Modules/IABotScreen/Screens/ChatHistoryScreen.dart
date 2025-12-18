@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:horas2/Frontend/Modules/IABotScreen/Screens/ChatBotScreen.dart';
+import 'package:horas2/Frontend/Modules/IABotScreen/ChatBotScreen.dart';
 import 'package:horas2/Frontend/Modules/IABotScreen/services/Chat_Service.dart';
 import 'package:horas2/Frontend/Modules/IABotScreen/ViewModels/servicechatcifrado.dart';
 import 'package:intl/intl.dart';

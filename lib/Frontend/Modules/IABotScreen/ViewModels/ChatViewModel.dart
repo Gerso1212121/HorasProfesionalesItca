@@ -80,8 +80,7 @@ class ChatViewModel {
     print('🚀 INICIANDO CHAT CON DIAGNÓSTICO...');
 
     await DebugHelper.diagnosticarProblemas();
-    await FirestoreFix.solucionCompletaFirestore();
-    await _cargarPerfilUsuario();
+     await _cargarPerfilUsuario();
     await _cargarConfiguracionPersonalizada();
 
     if (sesionAnterior != null) {

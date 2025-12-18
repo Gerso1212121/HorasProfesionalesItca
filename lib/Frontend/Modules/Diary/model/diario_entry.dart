@@ -1,18 +1,16 @@
-// lib/Frontend/Modules/Diary/Models/DiaryEntry.dart
+// lib/Frontend/Modules/Diary/model/diario_entry.dart
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:path/path.dart' as path;
 
 class DiaryEntry {
-  int? id;
-  String title;
-  DateTime date;
-  String mood;
-  String contentJson;
-  List<String> compressedImagePaths;
-  DateTime createdAt;
-  DateTime updatedAt;
+  final int? id;
+  final String title;
+  final DateTime date;
+  final String mood;
+  final String contentJson;
+  final List<String> compressedImagePaths;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   DiaryEntry({
     this.id,
@@ -20,70 +18,79 @@ class DiaryEntry {
     required this.date,
     required this.mood,
     required this.contentJson,
-    this.compressedImagePaths = const [],
+    required this.compressedImagePaths,
     required this.createdAt,
     required this.updatedAt,
   });
 
-  // Método para obtener el contenido como Document de Quill
+  // Método para obtener un Document de Flutter Quill
   Document getDocument() {
     try {
       final delta = Delta.fromJson(jsonDecode(contentJson));
       return Document.fromDelta(delta);
     } catch (e) {
+      print('Error parsing document: $e');
       return Document();
     }
   }
 
-  // Método para convertir a mapa para SQLite
+  // Convertir a Map para la base de datos
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      if (id != null) 'id': id,
       'title': title,
       'date': date.toIso8601String(),
       'mood': mood,
       'content_json': contentJson,
-      'compressed_image_paths': jsonEncode(compressedImagePaths),
+      'compressed_image_paths': compressedImagePaths.join('|'),
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
   }
 
-  // Método para crear desde mapa de SQLite
+  // Crear desde un Map de la base de datos
   factory DiaryEntry.fromMap(Map<String, dynamic> map) {
     return DiaryEntry(
-      id: map['id'],
-      title: map['title'],
-      date: DateTime.parse(map['date']),
-      mood: map['mood'],
-      contentJson: map['content_json'],
-      compressedImagePaths: List<String>.from(
-          jsonDecode(map['compressed_image_paths'] ?? '[]')),
-      createdAt: DateTime.parse(map['created_at']),
-      updatedAt: DateTime.parse(map['updated_at']),
+      id: map['id'] as int?,
+      title: map['title'] as String,
+      date: DateTime.parse(map['date'] as String),
+      mood: map['mood'] as String,
+      contentJson: map['content_json'] is String
+          ? map['content_json'] as String
+          : jsonEncode(map['content_json']),
+      compressedImagePaths: map['compressed_image_paths'] == null
+          ? []
+          : map['compressed_image_paths'] is String
+              ? (map['compressed_image_paths'] as String)
+                  .split('|')
+                  .where((p) => p.isNotEmpty)
+                  .toList()
+              : List<String>.from(map['compressed_image_paths']),
+      createdAt: DateTime.parse(map['created_at'] as String),
+      updatedAt: DateTime.parse(map['updated_at'] as String),
     );
   }
 
-  // Método para copiar con nuevos valores
-  DiaryEntry copyWith({
-    int? id,
-    String? title,
-    DateTime? date,
-    String? mood,
-    String? contentJson,
-    List<String>? compressedImagePaths,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  }) {
-    return DiaryEntry(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      date: date ?? this.date,
-      mood: mood ?? this.mood,
-      contentJson: contentJson ?? this.contentJson,
-      compressedImagePaths: compressedImagePaths ?? this.compressedImagePaths,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-    );
+  // Método para obtener un resumen del contenido (primeros 100 caracteres sin HTML)
+  String getSummary() {
+    try {
+      final document = getDocument();
+      final plainText = document.toPlainText();
+      return plainText.length > 100
+          ? '${plainText.substring(0, 100)}...'
+          : plainText;
+    } catch (e) {
+      return 'Contenido no disponible';
+    }
+  }
+
+  // Método para verificar si tiene imágenes
+  bool hasImages() {
+    return compressedImagePaths.isNotEmpty;
+  }
+
+  // Método para obtener la primera imagen (si existe)
+  String? getFirstImage() {
+    return compressedImagePaths.isNotEmpty ? compressedImagePaths.first : null;
   }
 }

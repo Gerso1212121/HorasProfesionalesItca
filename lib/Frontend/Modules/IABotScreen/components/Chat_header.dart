@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:horas2/Frontend/Constants/AppConstants.dart';
 
 
 // Chat Header
@@ -24,8 +25,8 @@ class ChatHeader extends StatelessWidget {
           end: Alignment.topRight,
         ),
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
+          bottomLeft: Radius.circular(10),
+          bottomRight: Radius.circular(10),
         ),
       ),
       padding: const EdgeInsets.only(top: 40, bottom: 0, left: 16, right: 60),
@@ -42,7 +43,7 @@ class ChatHeader extends StatelessWidget {
           icon: const Icon(
               Icons.menu,
               color: Color.fromARGB(255, 255, 255, 255),
-              size: 28,
+              size: 35,
             ),
           onPressed: onMenuPressed,
         ),
@@ -54,10 +55,10 @@ class ChatHeader extends StatelessWidget {
               Text(
                 title,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black87,
+                style: GoogleFonts.itim(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
                 ),
               ),
  

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:horas2/Frontend/Modules/IABotScreen/IABotScreen.dart';
 import 'package:horas2/Frontend/Modules/IABotScreen/MOdels/mensajes.dart';
-import 'package:horas2/Frontend/Modules/IABotScreen/Screens/ChatBotScreen.dart'
+import 'package:horas2/Frontend/Modules/IABotScreen/ChatBotScreen.dart'
     hide TypingIndicator;
 import 'package:horas2/Frontend/Modules/IABotScreen/components/TypingIndicator.dart';
 

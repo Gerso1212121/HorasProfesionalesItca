@@ -5,6 +5,7 @@ import 'package:horas2/Frontend/Modules/HomeScreen/widget/MascotaFlotante.dart';
 import 'package:horas2/Frontend/Modules/HomeScreen/widget/Header/HomeHeaderSection.dart';
 import 'package:horas2/Frontend/Modules/HomeScreen/widget/Sections/Chats/HomeChatSuggestionsSection.dart';
 import 'package:horas2/Frontend/Modules/HomeScreen/widget/Sections/TOOLS/HomeToolsSection.dart';
+import 'package:horas2/Frontend/Modules/IABotScreen/ChatBotScreen.dart';
 import 'package:horas2/Frontend/Modules/Profile/Screens/ProfileScreen.dart';
 import 'package:provider/provider.dart';
 import 'package:horas2/Frontend/Modules/Diary/Screens/DiarioScreen.dart';
@@ -105,7 +106,7 @@ class _HomeScreenContent extends StatelessWidget {
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            const ProfileScreen(),
+            const ChatBotScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           const begin = Offset(1.0, 0.0);
           const end = Offset.zero;

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:horas2/Backend/Data/Services/Conecction/ConnectivityService.dart';
 import 'package:horas2/Backend/Data/Services/DataBase/DatabaseHelper.dart';
 import 'package:horas2/Frontend/Modules/Auth/ViewModels/AuthUserDataVM.dart';
+import 'package:horas2/Frontend/Modules/Diary/ViewModels/DiaryScreenViewModel.dart';
 import 'package:horas2/Frontend/Modules/Excercises/ViewModel/ExerciseViewModel.dart';
 import 'package:horas2/Frontend/Modules/HomeScreen/ViewModels/AllModulesViewModel.dart';
 import 'package:horas2/Frontend/Modules/HomeScreen/ViewModels/VMcards/HomeCardsVM.dart';
@@ -55,6 +56,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AllModulesViewModel()),
         ChangeNotifierProvider(create: (_) => ProfileVM()),
         ChangeNotifierProvider(create: (_) => ExerciseViewModel()),
+        ChangeNotifierProvider(create: (_) => DiaryScreenViewModel()),
+        
       ],
       child: const MyApp(),
     ),

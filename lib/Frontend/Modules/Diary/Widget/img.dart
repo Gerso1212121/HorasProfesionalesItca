@@ -21,76 +21,48 @@ class ImageEmbedWidget extends EmbedBuilder {
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: GestureDetector(
-        onTap: readOnly
-            ? null
-            : () async {
-                final confirm = await showDialog<bool>(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    title: const Text('Eliminar imagen'),
-                    content:
-                        const Text('¿Deseas eliminar esta imagen del diario?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancelar'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text('Eliminar'),
-                      ),
-                    ],
-                  ),
-                );
-
-                if (confirm == true) {
-                  controller.document.delete(node.offset, 1);
-                }
-              },
-        child: Container(
-          constraints: const BoxConstraints(maxHeight: 400),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.grey.shade400,
-              width: 1.5,
-            ),
+      child: Container(
+        constraints: const BoxConstraints(maxHeight: 400),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.grey.shade400,
+            width: 1.5,
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.file(
-              File(imageSource),
-              width: double.infinity,
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) {
-                return Container(
-                  height: 150,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.broken_image,
-                        size: 48,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.file(
+            File(imageSource),
+            width: double.infinity,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) {
+              return Container(
+                height: 150,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.broken_image,
+                      size: 48,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Imagen no disponible',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
                         color: Colors.grey,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Imagen no disponible',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
         ),
       ),

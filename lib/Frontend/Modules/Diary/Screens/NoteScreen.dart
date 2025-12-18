@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:horas2/Frontend/Modules/Diary/Screens/DrawingBoard.dart';
-import 'package:horas2/Frontend/Modules/Diary/ViewModels/DiaryViewModel.dart';
+import 'package:horas2/Frontend/Modules/Diary/ViewModels/NoteViewModel.dart';
 import 'package:horas2/Frontend/Modules/Diary/Widget/dateselectorwidget.dart';
 import 'package:horas2/Frontend/Modules/Diary/Widget/img.dart';
 import 'package:horas2/Frontend/Modules/Diary/Widget/mode.dart';
@@ -38,16 +38,19 @@ class _NoteScreenState extends State<NoteScreen> {
     _initializeViewModel();
   }
 
-  Future<void> _initializeViewModel() async {
-    // Configurar los callbacks para mensajes
-    _viewModel.setMessageCallbacks(
-      onSuccess: _showSuccessMessage,
-      onError: _showErrorMessage,
-    );
-    
+Future<void> _initializeViewModel() async {
+  // Configurar los callbacks para mensajes
+  _viewModel.setMessageCallbacks(
+    onSuccess: _showSuccessMessage,
+    onError: _showErrorMessage,
+  );
+  
+  try {
     await _viewModel.initialize(existingEntry: widget.existingEntry);
+  } catch (e) {
+    _showErrorMessage('Error al inicializar: $e');
   }
-
+}
   @override
   void dispose() {
     _viewModel.dispose();
@@ -316,37 +319,62 @@ class _NoteScreenState extends State<NoteScreen> {
     );
   }
 
-  Future<void> _onSave() async {
+Future<void> _onSave() async {
+  try {
     await _viewModel.saveEntry();
+    
+    // Solo navegar después de que el estado haya cambiado
+    // Usar un pequeño delay para permitir que se muestre el mensaje
     if (mounted) {
-      Future.delayed(const Duration(seconds: 1), () {
-        Navigator.pop(context);
+      Future.delayed(const Duration(milliseconds: 500), () {
+        Navigator.pop(context, true); // Pasar true para indicar éxito
       });
     }
+  } catch (e) {
+    // Manejar error localmente también
+    _showErrorMessage('Error al guardar: $e');
   }
+}
 
-  Widget _buildSaveButton() {
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        color: const Color(0xFF4285F4),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF4285F4).withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: IconButton(
-        icon: const Icon(Icons.save_rounded, color: Colors.white, size: 20),
-        onPressed: _onSave,
-        padding: EdgeInsets.zero,
-      ),
-    );
-  }
+Widget _buildSaveButton() {
+  return Consumer<NoteViewModel>(
+    builder: (context, viewModel, child) {
+      return Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: viewModel.isLoading 
+            ? const Color(0xFF4285F4).withOpacity(0.5)
+            : const Color(0xFF4285F4),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: viewModel.isLoading
+            ? []
+            : [
+                BoxShadow(
+                  color: const Color(0xFF4285F4).withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+        ),
+        child: IconButton(
+          icon: viewModel.isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : const Icon(Icons.save_rounded, color: Colors.white, size: 20),
+          onPressed: viewModel.isLoading ? null : _onSave,
+          padding: EdgeInsets.zero,
+        ),
+      );
+    },
+  );
+}
 
   @override
   Widget build(BuildContext context) {

@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:horas2/Frontend/Modules/IABotScreen/Screens/ChatBotScreen.dart';
+import 'package:horas2/Frontend/Modules/IABotScreen/ChatBotScreen.dart';
 
 class TypingIndicator extends StatefulWidget {
   @override

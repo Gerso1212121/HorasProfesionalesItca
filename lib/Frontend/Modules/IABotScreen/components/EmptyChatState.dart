@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:horas2/Frontend/Modules/IABotScreen/IABotScreen.dart';
 
 // Empty Chat State
 class EmptyChatState extends StatelessWidget {
