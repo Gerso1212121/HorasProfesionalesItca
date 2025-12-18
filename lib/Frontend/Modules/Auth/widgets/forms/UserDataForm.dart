@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:horas2/Frontend/widgets/Inputs/CustomTextField.dart';
-import 'package:horas2/Frontend/widgets/CheckList/WheelSelectorField.dart';
+import 'package:horas2/Frontend/Modules/Auth/widgets/WheelSelectorField.dart';
 import 'package:horas2/Frontend/Constants/AppConstants.dart';
 import 'package:horas2/Backend/Models/Auth/UserDataModelForm.dart';
 

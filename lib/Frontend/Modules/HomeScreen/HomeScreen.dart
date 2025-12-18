@@ -5,8 +5,8 @@ import 'package:horas2/Frontend/Modules/HomeScreen/widget/MascotaFlotante.dart';
 import 'package:horas2/Frontend/Modules/HomeScreen/widget/Header/HomeHeaderSection.dart';
 import 'package:horas2/Frontend/Modules/HomeScreen/widget/Sections/Chats/HomeChatSuggestionsSection.dart';
 import 'package:horas2/Frontend/Modules/HomeScreen/widget/Sections/TOOLS/HomeToolsSection.dart';
-import 'package:horas2/Frontend/Modules/IABotScreen/ChatBotScreen.dart';
-import 'package:horas2/Frontend/Modules/Profile/Screens/ProfileScreen.dart';
+import 'package:horas2/Frontend/Modules/IABotScreen/Screens/ChatBotScreen.dart';
+ import 'package:horas2/Frontend/Modules/Profile/Screens/ProfileScreen.dart';
 import 'package:provider/provider.dart';
 import 'package:horas2/Frontend/Modules/Diary/Screens/DiarioScreen.dart';
 

@@ -4,51 +4,82 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:horas2/Backend/Data/API/GPTService.dart';
 
 class SedeAlertService {
-  // Mapa de correos de administradores por sede
+  // Mapa de correos de administradores por sede - ACTUALIZADO
   static const Map<String, String> _adminEmailsPorSede = {
     'san miguel': 'sanmiguel@admin.com',
     'la unión': 'launion@admin.com',
     'zacatecoluca': 'zacatecoluca@admin.com',
     'sede central': 'sedecentral@admin.com',
+    'sede central san salvador': 'sedecentral@admin.com', // NUEVO: agregado
     'santa tecla': 'sedecentral@admin.com', // Mismo que sede central
   };
 
   // Mapa de sedes que administra cada email real de Supabase
-  // Este mapa relaciona el email REAL del administrador con la sede que administra
   static const Map<String, String> _sedesPorAdminReal = {
     'sanmiguel@admin.com': 'san miguel',
     'launion@admin.com': 'la unión',
     'zacatecoluca@admin.com': 'zacatecoluca',
     'sedecentral@admin.com': 'sede central',
     // Agregar aquí los emails reales de los administradores cuando se conozcan
-    // Ejemplo: 'admin123@ejemplo.com': 'san miguel',
   };
 
-  /// Normaliza el nombre de la sede
-/// Normaliza el nombre de la sede
-static String normalizarSede(String sede) {
-  String normalizada = sede.toLowerCase().trim();
+  /// Normaliza el nombre de la sede - MEJORADO
+  static String normalizarSede(String sede) {
+    String normalizada = sede.toLowerCase().trim();
 
-  // Mapear nombres alternativos
-  final Map<String, String> mapeoSedes = {
-    'sede san miguel': 'san miguel',
-    'san miguel': 'san miguel',
-    'sede la unión': 'la unión',
-    'sede la union': 'la unión',
-    'la unión': 'la unión',
-    'la union': 'la unión',
-    'sede zacatecoluca': 'zacatecoluca',
-    'zacatecoluca': 'zacatecoluca',
-    'zacate coluca': 'zacatecoluca',
-    'sede santa tecla': 'santa tecla',
-    'santa tecla': 'santa tecla',
-    'sede central': 'sede central',
-    'central': 'sede central',
-  };
+    // Mapear nombres alternativos - ACTUALIZADO
+    final Map<String, String> mapeoSedes = {
+      'sede san miguel': 'san miguel',
+      'san miguel': 'san miguel',
+      'sede la unión': 'la unión',
+      'sede la union': 'la unión',
+      'la unión': 'la unión',
+      'la union': 'la unión',
+      'sede zacatecoluca': 'zacatecoluca',
+      'zacatecoluca': 'zacatecoluca',
+      'zacate coluca': 'zacatecoluca',
+      'sede santa tecla': 'santa tecla',
+      'santa tecla': 'santa tecla',
+      'sede central': 'sede central',
+      'sede central san salvador': 'sede central san salvador', // NUEVO
+      'central': 'sede central',
+      'san salvador': 'sede central san salvador', // NUEVO
+    };
 
-  // Buscar en el mapeo o devolver la normalizada
-  return mapeoSedes[normalizada] ?? normalizada;
-}
+    // Primero buscar coincidencia exacta
+    String? sedeMapeada = mapeoSedes[normalizada];
+
+    // Si no se encuentra exacto, buscar por contenido
+    if (sedeMapeada == null) {
+      if (normalizada.contains('san salvador')) {
+        sedeMapeada = 'sede central san salvador';
+      } else if (normalizada.contains('central')) {
+        sedeMapeada = 'sede central';
+      } else if (normalizada.contains('san miguel')) {
+        sedeMapeada = 'san miguel';
+      } else if (normalizada.contains('la unión') ||
+          normalizada.contains('la union')) {
+        sedeMapeada = 'la unión';
+      } else if (normalizada.contains('zacatecoluca') ||
+          normalizada.contains('zacate coluca')) {
+        sedeMapeada = 'zacatecoluca';
+      } else if (normalizada.contains('santa tecla')) {
+        sedeMapeada = 'santa tecla';
+      }
+    }
+
+    // Si aún no se encuentra, buscar en el mapa principal de admin emails
+    if (sedeMapeada == null) {
+      for (var key in _adminEmailsPorSede.keys) {
+        if (normalizada.contains(key) || key.contains(normalizada)) {
+          sedeMapeada = key;
+          break;
+        }
+      }
+    }
+
+    return sedeMapeada ?? normalizada;
+  }
 
   /// Obtiene la sede que administra un email específico
   static String? getSedePorAdminEmail(String adminEmail) {
@@ -66,14 +97,36 @@ static String normalizarSede(String sede) {
     return null;
   }
 
-  /// Obtiene el correo del administrador para una sede específica
+  /// Obtiene el correo del administrador para una sede específica - MEJORADO
   static String? getAdminEmailPorSede(String? sede) {
     if (sede == null || sede.isEmpty) {
-      return null;
+      print('⚠️ Sede es null o vacía');
+      return 'sedecentral@admin.com'; // Fallback a sede central
     }
 
     String sedeNormalizada = normalizarSede(sede);
-    return _adminEmailsPorSede[sedeNormalizada];
+    print('🔍 Sede normalizada para buscar admin: "$sedeNormalizada"');
+    print('🔍 Mapa completo: $_adminEmailsPorSede');
+
+    // Buscar primero coincidencia exacta
+    String? adminEmail = _adminEmailsPorSede[sedeNormalizada];
+
+    // Si no se encuentra, buscar por similitud
+    if (adminEmail == null) {
+      for (var key in _adminEmailsPorSede.keys) {
+        if (sedeNormalizada.contains(key) || key.contains(sedeNormalizada)) {
+          adminEmail = _adminEmailsPorSede[key];
+          print('✅ Encontrado admin por similitud: $key -> $adminEmail');
+          break;
+        }
+      }
+    }
+
+    // Fallback a sede central si no se encuentra
+    adminEmail ??= 'sedecentral@admin.com';
+
+    print('✅ Admin email para sede "$sede" ("$sedeNormalizada"): $adminEmail');
+    return adminEmail;
   }
 
   /// Usa IA para evaluar si un mensaje contiene abuso sexual
@@ -88,15 +141,12 @@ IMPORTANTE:
 - Bromas o expresiones coloquiales NO son abuso sexual
 - PERO considera abuso sexual cuando hay intención de agredir sexualmente a OTRA persona
 - Incluye violación, acoso sexual, tocamientos no consentidos, o expresiones de querer forzar actos sexuales
-- Ejemplos que SÍ son abuso sexual: "quiero violar a [persona]", "voy a tocar a [alguien] sin permiso", "me dan ganas de forzar a [persona]", "quiero abusar de [alguien]", "voy a violar a mi amiga", "quiero tocar a [persona] sin consentimiento", "quiero violar a X", "voy a violar a [nombre]", "necesito violar a alguien"
-- Cualquier expresión de querer tener relaciones sexuales forzadas con otra persona ES abuso sexual
-- Cualquier mención de violación, abuso sexual, o agresión sexual hacia otra persona ES abuso sexual
 
 Mensaje a evaluar: "$mensaje"
 
 Responde ÚNICAMENTE con:
 - "SI" si el mensaje contiene intenciones de abuso sexual o agresión sexual hacia otras personas
-- "NO" si el mensaje NO contiene abuso sexual (incluye masturbación, actividades normales, bromas, etc.)
+- "NO" si el mensaje NO contiene abuso sexual
 
 Respuesta:''';
 
@@ -107,7 +157,7 @@ Respuesta:''';
       return respuesta == 'si';
     } catch (e) {
       print('❌ Error evaluando abuso sexual con IA: $e');
-      return false; // En caso de error, no generar alerta
+      return false;
     }
   }
 
@@ -123,15 +173,12 @@ IMPORTANTE:
 - Bromas o expresiones coloquiales NO son violencia
 - Videojuegos, Minecraft, zombies, monstruos, enemigos virtuales NO son violencia real
 - PERO considera violencia cuando hay intención clara de hacer daño a OTRA PERSONA REAL
-- Ejemplos que SÍ son violencia: "quiero matar a [persona real]", "voy a golpear a [alguien real]", "me dan ganas de lastimar a [persona real]"
-- Ejemplos que NO son violencia: "quiero matar zombies", "quiero matar monstruos", "quiero matar enemigos", "quiero matar en el juego", "quiero matar más" (en contexto de videojuegos)
-- Cualquier expresión de querer matar, golpear, lastimar o hacer daño a OTRA PERSONA REAL ES violencia
 
 Mensaje a evaluar: "$mensaje"
 
 Responde ÚNICAMENTE con:
 - "SI" si el mensaje contiene intenciones de violencia hacia otras personas REALES
-- "NO" si el mensaje NO contiene violencia (incluye frustración, bromas, videojuegos, etc.)
+- "NO" si el mensaje NO contiene violencia
 
 Respuesta:''';
 
@@ -142,7 +189,7 @@ Respuesta:''';
       return respuesta == 'si';
     } catch (e) {
       print('❌ Error evaluando violencia con IA: $e');
-      return false; // En caso de error, no generar alerta
+      return false;
     }
   }
 
@@ -157,15 +204,12 @@ IMPORTANTE:
 - Expresar cansancio o estrés NO es depresión severa
 - Frustración por juegos, exámenes, o problemas menores NO es depresión severa
 - Solo considera depresión severa cuando hay signos claros de desesperanza profunda, autodesprecio extremo, o ideación suicida real
-- Frases como "me siento triste", "estoy cansado", "estoy mal por algo" NO son depresión severa
-- Ejemplos de depresión severa: "no valgo nada", "mi vida no tiene sentido", "soy un fracaso total", "nadie me quiere", "quiero desaparecer"
-- Ejemplos que NO son depresión severa: "estoy triste", "me siento mal", "estoy deprimido por [algo específico]", "me siento mal por perder mi juego"
 
 Mensaje a evaluar: "$mensaje"
 
 Responde ÚNICAMENTE con:
 - "SI" si el mensaje contiene signos de depresión SEVERA que requieren atención profesional inmediata
-- "NO" si el mensaje NO contiene depresión severa (incluye tristeza normal, estrés, frustración, etc.)
+- "NO" si el mensaje NO contiene depresión severa
 
 Respuesta:''';
 
@@ -176,7 +220,7 @@ Respuesta:''';
       return respuesta == 'si';
     } catch (e) {
       print('❌ Error evaluando depresión con IA: $e');
-      return false; // En caso de error, no generar alerta
+      return false;
     }
   }
 
@@ -190,17 +234,13 @@ IMPORTANTE:
 - Expresar tristeza o desánimo NO es intención de suicidio
 - Hablar de muerte en general NO es intención de suicidio
 - Bromas sobre muerte NO son intención de suicidio
-- Expresiones coloquiales como "me voy a morir" por algo trivial (juegos, exámenes, etc.) NO son suicidio
-- "Quiero matar" sin especificar a quién NO es suicidio (es violencia hacia otros)
 - Solo considera suicidio cuando hay intención clara, específica y REAL de hacerse daño a SÍ MISMO
-- Ejemplos de suicidio REAL: "me voy a matar", "quiero suicidarme", "me voy a quitar la vida", "quiero acabar conmigo", "tengo un plan para matarme"
-- Ejemplos que NO son suicidio: "quiero matar", "voy a matar", "necesito matar a alguien", "me voy a morir" (por algo trivial), "me quiero morir" (por frustración)
 
 Mensaje a evaluar: "$mensaje"
 
 Responde ÚNICAMENTE con:
 - "SI" si el mensaje contiene intenciones REALES y específicas de suicidio o autolesión hacia SÍ MISMO
-- "NO" si el mensaje NO contiene intención real de suicidio (incluye tristeza, bromas, expresiones coloquiales, violencia hacia otros, etc.)
+- "NO" si el mensaje NO contiene intención real de suicidio
 
 Respuesta:''';
 
@@ -211,21 +251,20 @@ Respuesta:''';
       return respuesta == 'si';
     } catch (e) {
       print('❌ Error evaluando suicidio con IA: $e');
-      return false; // En caso de error, no generar alerta
+      return false;
     }
   }
 
   /// Llama a OpenAI para evaluación
   static Future<String> _llamarOpenAI(String prompt) async {
     try {
-      // Importar el servicio de GPT existente
       final response = await GPTService.getResponse([
         {"role": "user", "content": prompt}
       ]);
       return response.trim();
     } catch (e) {
       print('❌ Error llamando a OpenAI: $e');
-      return "NO"; // En caso de error, no generar alerta
+      return "NO";
     }
   }
 
@@ -239,8 +278,6 @@ IMPORTANTE:
 - Si el mensaje menciona videojuegos, juegos, entretenimiento virtual, o actividades de ocio NO es una situación real de riesgo
 - Expresiones como "matar zombies", "matar enemigos", "matar en el juego" NO son violencia real
 - Frases como "me voy a morir" por perder en un juego NO son suicidio real
-- Cualquier expresión relacionada con videojuegos, juegos, entretenimiento, o actividades virtuales NO requiere alerta
-- IMPORTANTE: Si el mensaje es ambiguo (ej: "quiero matar") y NO menciona juegos explícitamente, asume que NO es videojuego (es mejor prevenir)
 
 Mensaje a evaluar: "$mensaje"
 
@@ -255,49 +292,43 @@ Respuesta:''';
 
       developer
           .log('🎮 IA evaluó contexto videojuegos: "$mensaje" → $respuesta');
-      // Solo considerar videojuego si la respuesta es explícitamente "si"
       return respuesta == 'si';
     } catch (e) {
       print('❌ Error evaluando contexto videojuegos con IA: $e');
-      return false; // En caso de error, no bloquear alertas
+      return false;
     }
   }
 
-  /// Detecta el tipo de alerta con prioridad específica (evita duplicados) - PÚBLICO
+  /// Detecta el tipo de alerta con prioridad específica
   static Future<List<String>> detectarTiposAlerta(String mensaje) async {
     final tiposAlerta = <String>[];
 
-    // PRIMERO: Verificar si es contexto de videojuegos usando IA
+    // Verificar si es contexto de videojuegos
     final esVideojuegos = await _esContextoVideojuegosConIA(mensaje);
     if (esVideojuegos) {
-      print(
-          '🎮 Contexto de videojuegos detectado por IA - NO evaluando alertas');
-      return tiposAlerta; // No generar alertas en contexto de videojuegos
+      print('🎮 Contexto de videojuegos detectado - NO generando alertas');
+      return tiposAlerta;
     }
 
-    // Evaluar en orden de prioridad para evitar duplicados
-    // 1. PRIMERO: Violencia hacia otros (más específico)
+    // Evaluar en orden de prioridad
     final esViolencia = await _evaluarViolenciaConIA(mensaje);
     if (esViolencia) {
       tiposAlerta.add('violencia');
-      return tiposAlerta; // Si es violencia, no evaluar otros tipos
+      return tiposAlerta;
     }
 
-    // 2. SEGUNDO: Abuso sexual hacia otros (más específico)
     final esAbusoSexual = await _evaluarAbusoSexualConIA(mensaje);
     if (esAbusoSexual) {
       tiposAlerta.add('abuso_sexual');
-      return tiposAlerta; // Si es abuso sexual, no evaluar otros tipos
+      return tiposAlerta;
     }
 
-    // 3. TERCERO: Suicidio/autolesión (hacia sí mismo)
     final esSuicidio = await _evaluarSuicidioConIA(mensaje);
     if (esSuicidio) {
       tiposAlerta.add('suicidio');
-      return tiposAlerta; // Si es suicidio, no evaluar depresión
+      return tiposAlerta;
     }
 
-    // 4. CUARTO: Depresión severa (solo si no es ninguno de los anteriores)
     final esDepresion = await _evaluarDepresionConIA(mensaje);
     if (esDepresion) {
       tiposAlerta.add('depresion');
@@ -306,7 +337,7 @@ Respuesta:''';
     return tiposAlerta;
   }
 
-  /// Crea una alerta en Firestore
+  /// Crea una alerta en Firestore - MEJORADO CON MÁS LOGS
   static Future<void> crearAlerta({
     required String mensaje,
     required String? sede,
@@ -322,41 +353,34 @@ Respuesta:''';
       print('🔍 Usuario email: "$usuarioEmail"');
       print('🔍 Usuario nombre: "$usuarioNombre"');
 
-      // Normalizar la sede antes de buscar el admin
-      final sedeNormalizada =
-          sede != null && sede.isNotEmpty ? normalizarSede(sede) : null;
+      // Normalizar la sede
+      final sedeNormalizada = normalizarSede(sede ?? '');
       print('🔍 Sede normalizada: "$sedeNormalizada"');
 
+      // Obtener admin email con fallback
       final adminEmail = getAdminEmailPorSede(sedeNormalizada);
-      print('🔍 Admin email encontrado: "$adminEmail"');
 
       if (adminEmail == null) {
-        print(
-            '❌ ERROR: No se encontró administrador para la sede: "$sede" (normalizada: "$sedeNormalizada")');
-        print(
-            '🔍 Sedes disponibles en mapa: ${_adminEmailsPorSede.keys.toList()}');
-        throw Exception('No se encontró administrador para la sede: $sede');
+        print('⚠️ Usando fallback para admin email');
       }
+
+      print('🔍 Admin email asignado: "$adminEmail"');
 
       final alerta = {
         'fecha': DateTime.now().toIso8601String(),
-        'sede': sedeNormalizada ?? 'Sin sede',
+        'sede': sedeNormalizada,
         'tipo_alerta': tipoAlerta,
         'usuario_email': usuarioEmail,
         'usuario_nombre': usuarioNombre,
         'usuario_telefono': usuarioTelefono ?? 'No disponible',
-        'admin_email': adminEmail,
+        'admin_email': adminEmail ?? 'sedecentral@admin.com',
         'estado': 'pendiente',
         'leida': false,
         'mensaje_original': mensaje,
         'resumen': _generarResumenAlerta(mensaje, tipoAlerta),
       };
 
-      print('📝 Intentando crear alerta en Firestore...');
-      print('📝 Datos completos de alerta:');
-      alerta.forEach((key, value) {
-        print('   $key: $value');
-      });
+      print('📝 Creando alerta en Firestore...');
 
       final docRef = await FirebaseFirestore.instance
           .collection('alertas_sede')
@@ -364,23 +388,21 @@ Respuesta:''';
           .timeout(const Duration(seconds: 10));
 
       print('🚨 ========== ALERTA CREADA EXITOSAMENTE ==========');
+      print('🚨 ID: ${docRef.id}');
       print('🚨 Tipo: $tipoAlerta');
-      print('🚨 Sede: "$sedeNormalizada"');
+      print('🚨 Sede: $sedeNormalizada');
       print('📧 Admin: $adminEmail');
-      print('🆔 ID del documento: ${docRef.id}');
       print('✅ ============================================');
     } catch (e, stackTrace) {
       print('❌ ========== ERROR CREANDO ALERTA ==========');
       print('❌ Error: $e');
-      print('❌ Tipo: ${e.runtimeType}');
       print('❌ Stack trace: $stackTrace');
       print('❌ ============================================');
-      // Re-lanzar el error para que se pueda manejar en el nivel superior
       rethrow;
     }
   }
 
-  /// Genera un resumen de la alerta sin mostrar el mensaje completo
+  /// Genera un resumen de la alerta
   static String _generarResumenAlerta(String mensaje, String tipoAlerta) {
     switch (tipoAlerta) {
       case 'suicidio':
@@ -396,7 +418,12 @@ Respuesta:''';
     }
   }
 
-  /// Procesa un mensaje y crea alerta si es necesario
+  /// Verifica si el email es válido para alertas
+  static bool _esEmailInstitucionalValido(String email) {
+    return email.toLowerCase().endsWith('@itca.edu.sv');
+  }
+
+  /// Procesa mensaje para alerta - CON MEJORES LOGS
   static Future<void> procesarMensajeParaAlerta({
     required String mensaje,
     required String? sede,
@@ -409,25 +436,31 @@ Respuesta:''';
     print('🏢 Sede: $sede');
     print('👤 Usuario: $usuarioEmail');
 
+    // Validar email institucional
+    if (!_esEmailInstitucionalValido(usuarioEmail)) {
+      print('🔒 ALERTA BLOQUEADA: Email no institucional - $usuarioEmail');
+      print('ℹ️ Solo se permiten alertas para emails @itca.edu.sv');
+      return;
+    }
+
+    print('✅ Email institucional verificado: $usuarioEmail');
+
     // Crear mensaje con contexto si hay historial
     String mensajeConContexto = mensaje;
     if (historialMensajes != null && historialMensajes.isNotEmpty) {
-      // Tomar los últimos 3 mensajes para contexto
       final mensajesRecientes = historialMensajes.take(3).toList();
       final contexto = mensajesRecientes
           .map((msg) => '${msg['emisor']}: ${msg['contenido']}')
           .join('\n');
       mensajeConContexto =
           'CONTEXTO DE CONVERSACIÓN:\n$contexto\n\nMENSAJE ACTUAL: $mensaje';
-      print('📝 Mensaje con contexto: $mensajeConContexto');
     }
 
-    // Detectar el tipo de alerta con prioridad específica
+    // Detectar tipos de alerta
     final tiposAlerta = await detectarTiposAlerta(mensajeConContexto);
     print('🎯 Tipos de alerta detectados: $tiposAlerta');
 
     if (tiposAlerta.isNotEmpty) {
-      // Crear una alerta por cada tipo detectado
       int alertasCreadas = 0;
       for (final tipoAlerta in tiposAlerta) {
         try {
@@ -441,85 +474,31 @@ Respuesta:''';
             usuarioTelefono: usuarioTelefono,
           );
           alertasCreadas++;
-          print('✅ Alerta de tipo $tipoAlerta creada exitosamente');
         } catch (e) {
           print('❌ Error al crear alerta de tipo $tipoAlerta: $e');
-          // Continuar con las demás alertas aunque una falle
         }
       }
       print(
-          '📊 Total de alertas procesadas: ${tiposAlerta.length}, creadas exitosamente: $alertasCreadas');
+          '📊 Alertas creadas exitosamente: $alertasCreadas de ${tiposAlerta.length}');
     } else {
-      print('❌ No se crean alertas - no se detectaron tipos de riesgo');
-      print('🔍 Evaluando cada tipo individualmente para debug:');
-
-      // Debug: evaluar cada tipo individualmente
-      final esViolencia = await _evaluarViolenciaConIA(mensaje);
-      final esAbusoSexual = await _evaluarAbusoSexualConIA(mensaje);
-      final esSuicidio = await _evaluarSuicidioConIA(mensaje);
-      final esDepresion = await _evaluarDepresionConIA(mensaje);
-
-      print('🔍 Debug - Violencia: $esViolencia');
-      print('🔍 Debug - Abuso Sexual: $esAbusoSexual');
-      print('🔍 Debug - Suicidio: $esSuicidio');
-      print('🔍 Debug - Depresión: $esDepresion');
+      print('ℹ️ No se detectaron tipos de riesgo para alerta');
     }
   }
 
   /// Obtiene alertas para un administrador específico
-  /// AHORA filtra por SEDE en lugar de por admin_email hardcoded
   static Future<List<Map<String, dynamic>>> getAlertasPorAdmin(
       String adminEmail) async {
     try {
-      print('🔍 ========== BUSCANDO ALERTAS PARA ADMIN ==========');
-      print('🔍 Admin email recibido: "$adminEmail"');
+      print('🔍 Buscando alertas para admin: "$adminEmail"');
 
       // Determinar la sede que administra este email
       String? sedeAdministrada = getSedePorAdminEmail(adminEmail);
-      print('🏢 Sede administrada por este email: "$sedeAdministrada"');
+      print('🏢 Sede administrada: "$sedeAdministrada"');
 
-      // Obtener todas las alertas
       final querySnapshot =
           await FirebaseFirestore.instance.collection('alertas_sede').get();
 
-      print(
-          '📊 Total de alertas en Firestore: ${querySnapshot.docs.length}');
-
-      // Log de todas las alertas para debug
-      for (var doc in querySnapshot.docs) {
-        final data = doc.data();
-        print('📋 Alerta ID: ${doc.id}');
-        print('   - admin_email: "${data['admin_email']}"');
-        print('   - sede: "${data['sede']}"');
-        print('   - tipo: "${data['tipo_alerta']}"');
-        print('   - usuario: "${data['usuario_nombre']}"');
-      }
-
-      // Si NO se encontró la sede administrada, mostrar TODAS las alertas como fallback
-      if (sedeAdministrada == null) {
-        print(
-            '⚠️ NO SE ENCONTRÓ SEDE PARA ESTE ADMIN - MOSTRANDO TODAS LAS ALERTAS');
-        print(
-            '💡 Agrega el email "$adminEmail" al mapa _sedesPorAdminReal en sede_alert_service.dart');
-
-        final todasLasAlertas = querySnapshot.docs.map((doc) {
-          final data = doc.data();
-          data['id'] = doc.id;
-          return data;
-        }).toList();
-
-        // Ordenar por fecha
-        todasLasAlertas.sort((a, b) {
-          final fechaA = DateTime.tryParse(a['fecha'] ?? '') ?? DateTime(1970);
-          final fechaB = DateTime.tryParse(b['fecha'] ?? '') ?? DateTime(1970);
-          return fechaB.compareTo(fechaA);
-        });
-
-        print('📊 ========== RESULTADO (TODAS) ==========');
-        print('📊 Alertas mostradas: ${todasLasAlertas.length}');
-        print('✅ ====================================');
-        return todasLasAlertas;
-      }
+      print('📊 Total de alertas en Firestore: ${querySnapshot.docs.length}');
 
       final alertas = querySnapshot.docs.map((doc) {
         final data = doc.data();
@@ -530,27 +509,11 @@ Respuesta:''';
         final alertaAdminEmail =
             alerta['admin_email']?.toString().toLowerCase() ?? '';
 
-        // Filtrar por sede O por email (para compatibilidad)
-        bool coincidePorSede = false;
-        bool coincidePorEmail = false;
+        bool coincide = alertaAdminEmail == adminEmail.toLowerCase();
 
         if (sedeAdministrada != null) {
-          coincidePorSede = alertaSede == sedeAdministrada.toLowerCase();
+          coincide = coincide || (alertaSede == sedeAdministrada.toLowerCase());
         }
-
-        coincidePorEmail = alertaAdminEmail == adminEmail.toLowerCase();
-
-        final coincide = coincidePorSede || coincidePorEmail;
-
-        print('🔍 Evaluando alerta:');
-        print('   - Sede de la alerta: "$alertaSede"');
-        print('   - Sede administrada: "$sedeAdministrada"');
-        print('   - Email de la alerta: "$alertaAdminEmail"');
-        print('   - Email del admin: "$adminEmail"');
-        print('   - Coincide por sede: $coincidePorSede');
-        print('   - Coincide por email: $coincidePorEmail');
-        developer
-            .log('   - RESULTADO: ${coincide ? "✅ INCLUIDA" : "❌ EXCLUIDA"}');
 
         return coincide;
       }).toList();
@@ -562,9 +525,7 @@ Respuesta:''';
         return fechaB.compareTo(fechaA);
       });
 
-      print('📊 ========== RESULTADO ==========');
-      print('📊 Alertas encontradas: ${alertas.length}');
-      print('✅ ====================================');
+      print('📊 Alertas encontradas para admin: ${alertas.length}');
       return alertas;
     } catch (e, stackTrace) {
       print('❌ Error obteniendo alertas: $e');
@@ -573,7 +534,7 @@ Respuesta:''';
     }
   }
 
-  /// Obtiene todas las alertas (para debugging)
+  /// Obtiene todas las alertas
   static Future<List<Map<String, dynamic>>> getAllAlertas() async {
     try {
       final querySnapshot = await FirebaseFirestore.instance
@@ -609,7 +570,7 @@ Respuesta:''';
     }
   }
 
-  /// Desmarca una alerta como leída (la marca como no leída)
+  /// Desmarca una alerta como leída
   static Future<void> desmarcarAlertaComoLeida(String alertaId) async {
     try {
       await FirebaseFirestore.instance
@@ -638,7 +599,7 @@ Respuesta:''';
     }
   }
 
-  /// Obtiene estadísticas de alertas por sede
+  /// Obtiene estadísticas de alertas
   static Future<Map<String, dynamic>> getEstadisticasAlertas() async {
     try {
       final querySnapshot =
@@ -652,15 +613,12 @@ Respuesta:''';
       int alertasLeidas = 0;
 
       for (final alerta in alertas) {
-        // Por sede
         final sede = alerta['sede'] ?? 'Sin sede';
         alertasPorSede[sede] = (alertasPorSede[sede] ?? 0) + 1;
 
-        // Por tipo
         final tipo = alerta['tipo_alerta'] ?? 'general';
         alertasPorTipo[tipo] = (alertasPorTipo[tipo] ?? 0) + 1;
 
-        // Estado
         if (alerta['leida'] == true) {
           alertasLeidas++;
         } else {
@@ -680,71 +638,6 @@ Respuesta:''';
       return {
         'total_alertas': 0,
         'alertas_por_sede': <String, int>{},
-        'alertas_por_tipo': <String, int>{},
-        'alertas_pendientes': 0,
-        'alertas_leidas': 0,
-      };
-    }
-  }
-
-  /// Obtiene estadísticas de alertas para un administrador específico por sede
-  static Future<Map<String, dynamic>> getEstadisticasAlertasPorAdmin(
-      String adminEmail) async {
-    try {
-      final querySnapshot =
-          await FirebaseFirestore.instance.collection('alertas_sede').get();
-
-      final alertas = querySnapshot.docs
-          .map((doc) => doc.data())
-          .where((alerta) => alerta['admin_email'] == adminEmail)
-          .toList();
-
-      final alertasPorSede = <String, Map<String, int>>{};
-      final alertasPorTipo = <String, int>{};
-      int alertasPendientes = 0;
-      int alertasLeidas = 0;
-
-      for (final alerta in alertas) {
-        // Por sede con desglose
-        final sede = alerta['sede'] ?? 'Sin sede';
-        if (!alertasPorSede.containsKey(sede)) {
-          alertasPorSede[sede] = {
-            'total': 0,
-            'pendientes': 0,
-            'leidas': 0,
-          };
-        }
-
-        alertasPorSede[sede]!['total'] =
-            (alertasPorSede[sede]!['total'] ?? 0) + 1;
-
-        if (alerta['leida'] == true) {
-          alertasPorSede[sede]!['leidas'] =
-              (alertasPorSede[sede]!['leidas'] ?? 0) + 1;
-          alertasLeidas++;
-        } else {
-          alertasPorSede[sede]!['pendientes'] =
-              (alertasPorSede[sede]!['pendientes'] ?? 0) + 1;
-          alertasPendientes++;
-        }
-
-        // Por tipo
-        final tipo = alerta['tipo_alerta'] ?? 'general';
-        alertasPorTipo[tipo] = (alertasPorTipo[tipo] ?? 0) + 1;
-      }
-
-      return {
-        'total_alertas': alertas.length,
-        'alertas_por_sede': alertasPorSede,
-        'alertas_por_tipo': alertasPorTipo,
-        'alertas_pendientes': alertasPendientes,
-        'alertas_leidas': alertasLeidas,
-      };
-    } catch (e) {
-      print('❌ Error obteniendo estadísticas por admin: $e');
-      return {
-        'total_alertas': 0,
-        'alertas_por_sede': <String, Map<String, int>>{},
         'alertas_por_tipo': <String, int>{},
         'alertas_pendientes': 0,
         'alertas_leidas': 0,

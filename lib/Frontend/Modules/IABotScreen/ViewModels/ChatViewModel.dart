@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:horas2/Backend/Data/API/GPTService.dart';
 import 'package:horas2/Backend/Data/Services/DataBase/DatabaseHelper.dart';
 import 'package:horas2/Frontend/Modules/IABotScreen/MOdels/mensajes.dart';
@@ -16,6 +18,7 @@ import 'package:horas2/Frontend/Modules/IABotScreen/ViewModels/service.dart';
 import 'package:horas2/Frontend/Modules/IABotScreen/ViewModels/servicechatcifrado.dart';
 import 'package:horas2/Frontend/Modules/IABotScreen/ViewModels/tituloIAservice.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ChatViewModel {
   // ========== ESTADO Y CONTROLADORES ==========
@@ -53,6 +56,8 @@ class ChatViewModel {
   final Function(String)? onError;
   final Function()? onScrollToBottom;
   final Function(String)? showSnackBar;
+  final Function(String)?
+      showEmergencyModal; // NUEVO: callback para modal de emergencia
 
   // ========== CONSTRUCTOR ==========
   ChatViewModel({
@@ -61,6 +66,7 @@ class ChatViewModel {
     this.onError,
     this.onScrollToBottom,
     this.showSnackBar,
+    this.showEmergencyModal, // NUEVO: parámetro para modal de emergencia
   });
 
   // ========== GETTERS ==========
@@ -80,348 +86,399 @@ class ChatViewModel {
     print('🚀 INICIANDO CHAT CON DIAGNÓSTICO...');
 
     await DebugHelper.diagnosticarProblemas();
-     await _cargarPerfilUsuario();
+    await FirestoreFix.solucionCompletaFirestore();
+    await _cargarPerfilUsuario();
     await _cargarConfiguracionPersonalizada();
 
     if (sesionAnterior != null) {
       await _cargarSesionAnterior(sesionAnterior);
     } else {
-      print(
-          '🆕 SESIÓN INDEPENDIENTE: Sin memoria de conversaciones previas');
+      print('🆕 SESIÓN INDEPENDIENTE: Sin memoria de conversaciones previas');
 
       if (mensajeInicial != null && mensajeInicial.trim().isNotEmpty) {
         developer
             .log('💡 MENSAJE INICIAL DESDE SUGERENCIA: "${mensajeInicial}"');
         await _startSession();
-        addMessage(mensajeInicial.trim()); // CAMBIADO: _addMessage → addMessage
+        addMessage(mensajeInicial.trim());
       }
     }
 
     print('✅ INICIALIZACIÓN DEL CHAT COMPLETADA');
   }
- 
 
+  void addMessage(String text) async {
+    print('📝 MENSAJE RECIBIDO: "$text"');
+    print('📝📝📝 MENSAJE RECIBIDO: "$text" 📝📝📝');
 
-
-
-
-
-void addMessage(String text) async {
-  print('📝 MENSAJE RECIBIDO: "$text"');
-  print('📝📝📝 MENSAJE RECIBIDO: "$text" 📝📝📝');
-
-  // 1. Verificar si ya está pensando - ANTES de procesar
-  if (_isThinking) {
-    print('🚫 Bloqueado: IA está pensando, no se puede enviar mensaje');
-    return;
-  }
-
-  if (!_sessionActive) {
-    _sessionActive = true;
-    _notifySessionStateChanged();
-  }
-
-  // 2. Marcar como pensando INMEDIATAMENTE
-  _isThinking = true;
-  _notifyMessagesUpdated(); // Esto actualiza el botón de envío
-
-  // Agregar mensaje del usuario
-  _messages.add(Mensaje(
-    emisor: _nombreUsuario,
-    contenido: text,
-    fecha: DateTime.now().toIso8601String(),
-  ));
-
-  _notifyMessagesUpdated();
-  onScrollToBottom?.call(); // Scroll inmediato
-
-  // Verificar si es pregunta sobre nombre
-  final lower = text.toLowerCase();
-  if (lower.contains('como me llamo') ||
-      lower.contains('cómo me llamo') ||
-      lower.contains('cual es mi nombre') ||
-      lower.contains('cuál es mi nombre') ||
-      lower.contains('sabes mi nombre') ||
-      lower.contains('mi nombre')) {
-    final nombreMostrar =
-        _nombreUsuario.isNotEmpty ? _nombreUsuario : 'No lo tengo registrado';
-    _messages.add(Mensaje(
-      emisor: "Asistente",
-      contenido: nombreMostrar == 'No lo tengo registrado'
-          ? 'Creo que no tengo tu nombre registrado todavía. ¿Quieres que lo guardemos para personalizar tu experiencia?'
-          : 'Te llamas $nombreMostrar 🙂',
-      fecha: DateTime.now().toIso8601String(),
-    ));
-    
-    // TERMINAR PENSAMIENTO
-    _isThinking = false;
-    _notifyMessagesUpdated();
-    onScrollToBottom?.call();
-    return;
-  }
-
-  print('🔍 INICIANDO ANÁLISIS EMOCIONAL para mensaje: "$text"');
-  
-  final emotion = await analyzeEmotion(text);
-  print('🔍 ANÁLISIS EMOCIONAL: "$text" → $emotion');
-
-  // Manejar emociones de alto riesgo
-  if (emotion == 'high_risk') {
-    print('🚨 HIGH_RISK DETECTADO - Mostrando mensaje de crisis INMEDIATAMENTE');
-    
-    final mensajeCrisis =
-        SedeContactService.generarMensajeCrisis(_sedeEstudiante);
-    
-    // 1. Mostrar el mensaje de crisis al usuario
-    _messages.add(Mensaje(
-      emisor: "Sistema",
-      contenido: mensajeCrisis,
-      fecha: DateTime.now().toIso8601String(),
-    ));
-    
-    // 2. GUARDAR LA ALERTA EN alertas_sede usando SedeAlertService
-    try {
-      print('📊 CREANDO ALERTA EN alertas_sede...');
-      
-      // Solo usar SedeAlertService - ya guarda con la estructura correcta
-      await SedeAlertService.procesarMensajeParaAlerta(
-        mensaje: text,
-        sede: _sedeEstudiante,
-        usuarioEmail: _usuario,
-        usuarioNombre: _nombreUsuario,
-        usuarioTelefono: _telefonoEstudiante,
-        historialMensajes: _messages
-            .where((m) => m.contenido != "TYPING_INDICATOR")
-            .map((m) => m.toJson())
-            .toList(),
-      );
-      
-      print('✅ ALERTA GUARDADA EN alertas_sede');
-      
-      // OPCIONAL: Si necesitas registro adicional, usa este código:
-      // await FirebaseFirestore.instance
-      //     .collection('alertas_extra_log')
-      //     .add({
-      //   'estudiante_id': _uidUsuario,
-      //   'mensaje': text,
-      //   'fecha': DateTime.now().toIso8601String(),
-      // });
-      
-    } catch (e, stackTrace) {
-      print('❌ ERROR AL GUARDAR ALERTA: $e');
-      print('❌ Stack trace: $stackTrace');
-      
-      // Intentar guardar en colección de respaldo si falla SedeAlertService
-      try {
-        await FirebaseFirestore.instance
-            .collection('alertas_fallback')
-            .add({
-          'estudiante': _nombreUsuario,
-          'email': _usuario,
-          'sede': _sedeEstudiante,
-          'mensaje': text,
-          'error': e.toString(),
-          'fecha': DateTime.now().toIso8601String(),
-        });
-      } catch (e2) {
-        print('❌ ERROR INCLUSO EN FALLBACK: $e2');
-      }
+    // 1. Verificar si ya está pensando - ANTES de procesar
+    if (_isThinking) {
+      print('🚫 Bloqueado: IA está pensando, no se puede enviar mensaje');
+      return;
     }
-    
-    // 3. Actualizar UI
-    _notifyMessagesUpdated();
-    onScrollToBottom?.call();
-    
-    // 4. Programar seguimiento
-    _programarSeguimientoHighRisk(text);
-    
-    // 5. IMPORTANTE: Terminar estado de pensamiento
-    _isThinking = false;
-    _notifyMessagesUpdated();
-    
-    return;
-  } else if (emotion == 'sad' || emotion == 'stressed') {
-    final empatica =
-        getAssistantResponse(text, _nombreUsuario, emotion, null);
+
+    if (!_sessionActive) {
+      _sessionActive = true;
+      _notifySessionStateChanged();
+
+      // Iniciar auto-guardado
+      _currentSessionId ??=
+          '${DateTime.now().millisecondsSinceEpoch}_${_usuario.hashCode}';
+      _iniciarAutoSave();
+      print('🔄 AUTO-GUARDADO INICIADO CON SESIÓN ACTIVA');
+    }
+
+    // 1. Verificar si ya está pensando - ANTES de procesar
+    if (_isThinking) {
+      print('🚫 Bloqueado: IA está pensando, no se puede enviar mensaje');
+      return;
+    }
+
+    // 2. Marcar como pensando INMEDIATAMENTE
+    _isThinking = true;
+    _notifyMessagesUpdated(); // Esto actualiza el botón de envío
+
+    // Agregar mensaje del usuario
     _messages.add(Mensaje(
-      emisor: "Asistente",
-      contenido: empatica.isNotEmpty
-          ? empatica
-          : "💙 Siento mucho que te sientas así. Tu bienestar es importante y no tienes que cargar con esto solo/a. Estoy aquí para escucharte.",
+      emisor: _nombreUsuario,
+      contenido: text,
       fecha: DateTime.now().toIso8601String(),
     ));
-    
-    // TERMINAR PENSAMIENTO
-    _isThinking = false;
+
     _notifyMessagesUpdated();
-    onScrollToBottom?.call();
-    return;
-  }
+    onScrollToBottom?.call(); // Scroll inmediato
 
-  // ========== PARTE CRÍTICA: PROCESAR CON GPT ==========
-  
-  // Agregar indicador de typing
-  final loadingMsg = Mensaje(
-    emisor: "Asistente",
-    contenido: "TYPING_INDICATOR",
-    fecha: DateTime.now().toIso8601String(),
-  );
+    // Verificar si es pregunta sobre nombre
+    final lower = text.toLowerCase();
+    if (lower.contains('como me llamo') ||
+        lower.contains('cómo me llamo') ||
+        lower.contains('cual es mi nombre') ||
+        lower.contains('cuál es mi nombre') ||
+        lower.contains('sabes mi nombre') ||
+        lower.contains('mi nombre')) {
+      final nombreMostrar =
+          _nombreUsuario.isNotEmpty ? _nombreUsuario : 'No lo tengo registrado';
+      _messages.add(Mensaje(
+        emisor: "Asistente",
+        contenido: nombreMostrar == 'No lo tengo registrado'
+            ? 'Creo que no tengo tu nombre registrado todavía. ¿Quieres que lo guardemos para personalizar tu experiencia?'
+            : 'Te llamas $nombreMostrar 🙂',
+        fecha: DateTime.now().toIso8601String(),
+      ));
 
-  _messages.add(loadingMsg);
-  _notifyMessagesUpdated(); // Importante: notificar para mostrar el typing
-  onScrollToBottom?.call(); // Scroll para ver el typing
+      // TERMINAR PENSAMIENTO Y AUTO-GUARDAR
+      _isThinking = false;
+      _notifyMessagesUpdated();
+      onScrollToBottom?.call();
 
-  // Preparar mensajes para GPT
-  List<Map<String, String>> messagesForGpt = [];
+      // AUTO-GUARDAR DESPUÉS DE RESPUESTA RÁPIDA
+      _programarAutoGuardadoFuturo();
+      return;
+    }
 
-  if (_configuracionCargada && _promptPersonalizado.isNotEmpty) {
-    messagesForGpt.add({"role": "system", "content": _promptPersonalizado});
-    print('🤖 Prompt automático incluido en la conversación');
+    print('🔍 INICIANDO ANÁLISIS EMOCIONAL para mensaje: "$text"');
 
-    try {
-      final fragmentosRelevantes =
-          _librosService.obtenerFragmentosRelevantes(text);
+    final emotion = await analyzeEmotion(text);
+    print('🔍 ANÁLISIS EMOCIONAL: "$text" → $emotion');
 
-      if (fragmentosRelevantes.isNotEmpty &&
-          !fragmentosRelevantes.contains('No se encontraron')) {
-        final fragmentosLimitados = fragmentosRelevantes.length > 2000
-            ? '${fragmentosRelevantes.substring(0, 2000)}...'
-            : fragmentosRelevantes;
+    // Manejar emociones de alto riesgo
+    if (emotion == 'high_risk') {
+      print(
+          '🚨 HIGH_RISK DETECTADO - Mostrando mensaje de crisis INMEDIATAMENTE');
 
-        messagesForGpt.add({
-          "role": "system",
-          "content":
-              "INFORMACIÓN RELEVANTE DE LIBROS DE PSICOLOGÍA:\n\n$fragmentosLimitados\n\nUsa esta información como base teórica, pero responde de forma breve, clara y empática."
-        });
+      final mensajeCrisis =
+          SedeContactService.generarMensajeCrisis(_sedeEstudiante);
 
-        print('📚 Fragmentos de libros agregados al contexto de GPT');
+      // 1. Mostrar el mensaje de crisis al usuario EN EL CHAT
+      _messages.add(Mensaje(
+        emisor: "Sistema",
+        contenido: mensajeCrisis,
+        fecha: DateTime.now().toIso8601String(),
+      ));
+
+      // 2. MOSTRAR MODAL DE EMERGENCIA (NUEVO)
+      if (showEmergencyModal != null) {
+        print('🚨 MOSTRANDO MODAL DE EMERGENCIA...');
+        showEmergencyModal!(mensajeCrisis);
       } else {
-        print('ℹ️ Sin fragmentos relevantes para esta consulta, se usa solo el prompt general');
+        print('⚠️ showEmergencyModal callback no configurado');
       }
-    } catch (e) {
-      print('⚠️ Error obteniendo fragmentos de libros: $e');
+
+      // 3. GUARDAR LA ALERTA EN alertas_sede usando SedeAlertService
+      try {
+        print('📊 CREANDO ALERTA EN alertas_sede...');
+
+        // Solo usar SedeAlertService - ya guarda con la estructura correcta
+        await SedeAlertService.procesarMensajeParaAlerta(
+          mensaje: text,
+          sede: _sedeEstudiante,
+          usuarioEmail: _usuario,
+          usuarioNombre: _nombreUsuario,
+          usuarioTelefono: _telefonoEstudiante,
+          historialMensajes: _messages
+              .where((m) => m.contenido != "TYPING_INDICATOR")
+              .map((m) => m.toJson())
+              .toList(),
+        );
+
+        print('✅ ALERTA GUARDADA EN alertas_sede');
+      } catch (e, stackTrace) {
+        print('❌ ERROR AL GUARDAR ALERTA: $e');
+        print('❌ Stack trace: $stackTrace');
+
+        // Intentar guardar en colección de respaldo si falla SedeAlertService
+        try {
+          await FirebaseFirestore.instance.collection('alertas_fallback').add({
+            'estudiante': _nombreUsuario,
+            'email': _usuario,
+            'sede': _sedeEstudiante,
+            'mensaje': text,
+            'error': e.toString(),
+            'fecha': DateTime.now().toIso8601String(),
+          });
+        } catch (e2) {
+          print('❌ ERROR INCLUSO EN FALLBACK: $e2');
+        }
+      }
+
+      // 4. Actualizar UI
+      _notifyMessagesUpdated();
+      onScrollToBottom?.call();
+
+      // 5. Programar seguimiento
+      _programarSeguimientoHighRisk(text);
+
+      // 6. IMPORTANTE: Terminar estado de pensamiento y AUTO-GUARDAR
+      _isThinking = false;
+      _notifyMessagesUpdated();
+
+      // AUTO-GUARDAR DESPUÉS DE MENSAJE DE CRISIS
+      _programarAutoGuardadoFuturo();
+
+      return;
+    } else if (emotion == 'sad' || emotion == 'stressed') {
+      final empatica =
+          getAssistantResponse(text, _nombreUsuario, emotion, null);
+      _messages.add(Mensaje(
+        emisor: "Asistente",
+        contenido: empatica.isNotEmpty
+            ? empatica
+            : "💙 Siento mucho que te sientas así. Tu bienestar es importante y no tienes que cargar con esto solo/a. Estoy aquí para escucharte.",
+        fecha: DateTime.now().toIso8601String(),
+      ));
+
+      // TERMINAR PENSAMIENTO Y AUTO-GUARDAR
+      _isThinking = false;
+      _notifyMessagesUpdated();
+      onScrollToBottom?.call();
+
+      // AUTO-GUARDAR DESPUÉS DE RESPUESTA EMPÁTICA
+      _programarAutoGuardadoFuturo();
+      return;
     }
-  }
 
-  // Agregar historial de conversación
-  for (var msg in _messages.where((m) => m.contenido != "TYPING_INDICATOR")) {
-    String role;
-    if (msg.emisor == "Usuario" || msg.emisor == _nombreUsuario) {
-      role = "user";
-    } else if (msg.emisor == "Sistema") {
-      role = "system";
-    } else {
-      role = "assistant";
-    }
+    // ========== PARTE CRÍTICA: PROCESAR CON GPT ==========
 
-    messagesForGpt.add({"role": role, "content": msg.contenido});
-  }
+    // Agregar indicador de typing
+    final loadingMsg = Mensaje(
+      emisor: "Asistente",
+      contenido: "TYPING_INDICATOR",
+      fecha: DateTime.now().toIso8601String(),
+    );
 
-  print('🤖 ENVIANDO A GPT: ${messagesForGpt.length} mensajes');
+    _messages.add(loadingMsg);
+    _notifyMessagesUpdated(); // Importante: notificar para mostrar el typing
+    onScrollToBottom?.call(); // Scroll para ver el typing
 
-  try {
-    int intentos = 0;
-    const maxIntentos = 3;
-    String? respuesta;
+    // Preparar mensajes para GPT
+    List<Map<String, String>> messagesForGpt = [];
 
-    while (intentos < maxIntentos && respuesta == null) {
-      intentos++;
-      print('🔄 Intento $intentos de $maxIntentos');
+    if (_configuracionCargada && _promptPersonalizado.isNotEmpty) {
+      messagesForGpt.add({"role": "system", "content": _promptPersonalizado});
+      print('🤖 Prompt automático incluido en la conversación');
 
       try {
-        respuesta = await GPTService.getResponse(messagesForGpt);
-        print('✅ RESPUESTA DE GPT: $respuesta');
-        break;
-      } catch (e) {
-        print('❌ Error en intento $intentos: $e');
-        if (intentos >= maxIntentos) {
-          rethrow;
+        final fragmentosRelevantes =
+            _librosService.obtenerFragmentosRelevantes(text);
+
+        if (fragmentosRelevantes.isNotEmpty &&
+            !fragmentosRelevantes.contains('No se encontraron')) {
+          final fragmentosLimitados = fragmentosRelevantes.length > 2000
+              ? '${fragmentosRelevantes.substring(0, 2000)}...'
+              : fragmentosRelevantes;
+
+          messagesForGpt.add({
+            "role": "system",
+            "content":
+                "INFORMACIÓN RELEVANTE DE LIBROS DE PSICOLOGÍA:\n\n$fragmentosLimitados\n\nUsa esta información como base teórica, pero responde de forma breve, clara y empática."
+          });
+
+          print('📚 Fragmentos de libros agregados al contexto de GPT');
+        } else {
+          print(
+              'ℹ️ Sin fragmentos relevantes para esta consulta, se usa solo el prompt general');
         }
-        await Future.delayed(Duration(seconds: intentos));
+      } catch (e) {
+        print('⚠️ Error obteniendo fragmentos de libros: $e');
       }
     }
 
-    // Remover el indicador de typing
-    _messages.removeWhere((m) => m.contenido == "TYPING_INDICATOR");
-    
-    // Agregar respuesta del asistente
-    final gptMsg = Mensaje(
-      emisor: "Asistente",
-      contenido: respuesta?.trim() ??
-          "Lo siento, no pude procesar tu mensaje. Inténtalo de nuevo.",
-      fecha: DateTime.now().toIso8601String(),
-    );
-    _messages.add(gptMsg);
+    // Agregar historial de conversación
+    for (var msg in _messages.where((m) => m.contenido != "TYPING_INDICATOR")) {
+      String role;
+      if (msg.emisor == "Usuario" || msg.emisor == _nombreUsuario) {
+        role = "user";
+      } else if (msg.emisor == "Sistema") {
+        role = "system";
+      } else {
+        role = "assistant";
+      }
 
-    _notifyMessagesUpdated();
-    onScrollToBottom?.call();
-
-    // Auto-guardar
-    _autoGuardarSesion();
-  } catch (e) {
-    print('❌ ERROR GPT: $e');
-
-    // Remover indicador de typing en caso de error
-    _messages.removeWhere((m) => m.contenido == "TYPING_INDICATOR");
-
-    String errorMessage = "⚠️ Error al conectar con el asistente. ";
-    if (e.toString().contains('permission-denied') ||
-        e.toString().contains('PERMISSION_DENIED')) {
-      errorMessage += "Problema de permisos en Firestore.";
-    } else if (e.toString().contains('network') ||
-        e.toString().contains('timeout')) {
-      errorMessage += "Problema de conexión. Verifica tu internet.";
-    } else if (e.toString().contains('API')) {
-      errorMessage += "Problema con la API de OpenAI.";
-    } else {
-      errorMessage += "Inténtalo de nuevo.";
+      messagesForGpt.add({"role": role, "content": msg.contenido});
     }
 
-    final errorMsg = Mensaje(
-      emisor: "Sistema",
-      contenido: errorMessage,
-      fecha: DateTime.now().toIso8601String(),
-    );
-    _messages.add(errorMsg);
+    print('🤖 ENVIANDO A GPT: ${messagesForGpt.length} mensajes');
 
-    _notifyMessagesUpdated();
-    onScrollToBottom?.call();
-  } finally {
-    // IMPORTANTE: Finalizar estado de pensamiento en TODOS los casos
-    _isThinking = false;
-    _notifyMessagesUpdated(); // Esto habilitará el botón de nuevo
+    try {
+      int intentos = 0;
+      const maxIntentos = 3;
+      String? respuesta;
+
+      while (intentos < maxIntentos && respuesta == null) {
+        intentos++;
+        print('🔄 Intento $intentos de $maxIntentos');
+
+        try {
+          respuesta = await GPTService.getResponse(messagesForGpt);
+          print('✅ RESPUESTA DE GPT: $respuesta');
+          break;
+        } catch (e) {
+          print('❌ Error en intento $intentos: $e');
+          if (intentos >= maxIntentos) {
+            rethrow;
+          }
+          await Future.delayed(Duration(seconds: intentos));
+        }
+      }
+
+      // Remover el indicador de typing
+      _messages.removeWhere((m) => m.contenido == "TYPING_INDICATOR");
+
+      // Agregar respuesta del asistente
+      final gptMsg = Mensaje(
+        emisor: "Asistente",
+        contenido: respuesta?.trim() ??
+            "Lo siento, no pude procesar tu mensaje. Inténtalo de nuevo.",
+        fecha: DateTime.now().toIso8601String(),
+      );
+      _messages.add(gptMsg);
+
+      _notifyMessagesUpdated();
+      onScrollToBottom?.call();
+
+      // AUTO-GUARDADO INMEDIATO DESPUÉS DE RESPUESTA GPT
+      print('💾 AUTO-GUARDADO TRAS RESPUESTA GPT');
+      _programarAutoGuardadoFuturo();
+    } catch (e) {
+      print('❌ ERROR GPT: $e');
+
+      // Remover indicador de typing en caso de error
+      _messages.removeWhere((m) => m.contenido == "TYPING_INDICATOR");
+
+      String errorMessage = "⚠️ Error al conectar con el asistente. ";
+      if (e.toString().contains('permission-denied') ||
+          e.toString().contains('PERMISSION_DENIED')) {
+        errorMessage += "Problema de permisos en Firestore.";
+      } else if (e.toString().contains('network') ||
+          e.toString().contains('timeout')) {
+        errorMessage += "Problema de conexión. Verifica tu internet.";
+      } else if (e.toString().contains('API')) {
+        errorMessage += "Problema con la API de OpenAI.";
+      } else {
+        errorMessage += "Inténtalo de nuevo.";
+      }
+
+      final errorMsg = Mensaje(
+        emisor: "Sistema",
+        contenido: errorMessage,
+        fecha: DateTime.now().toIso8601String(),
+      );
+      _messages.add(errorMsg);
+
+      _notifyMessagesUpdated();
+      onScrollToBottom?.call();
+
+      // AUTO-GUARDAR TAMBIÉN EN CASO DE ERROR
+      _programarAutoGuardadoFuturo();
+    } finally {
+      // IMPORTANTE: Finalizar estado de pensamiento en TODOS los casos
+      _isThinking = false;
+      _notifyMessagesUpdated(); // Esto habilitará el botón de nuevo
+
+      // AUTO-GUARDADO FINAL PARA ASEGURAR
+      _programarAutoGuardadoFuturo(segundos: 2);
+    }
   }
-}
 
+  // ========== NUEVO MÉTODO: PROGRAMAR AUTO-GUARDADO FUTURO ==========
+  void _programarAutoGuardadoFuturo({int segundos = 1}) {
+    print('⏰ Programando auto-guardado en $segundos segundos...');
+    Future.delayed(Duration(seconds: segundos), () {
+      if (_sessionActive && _messages.isNotEmpty && !_isThinking) {
+        print('🔄 Ejecutando auto-guardado programado');
+        _autoGuardarSesion();
+      } else {
+        print(
+            '⏸️ Auto-guardado programado omitido - condiciones no cumplidas:');
+        print('   • sessionActive: $_sessionActive');
+        print('   • messages.isNotEmpty: ${_messages.isNotEmpty}');
+        print('   • isThinking: $_isThinking');
 
-
-
-
-
-
-
-
-
-
-
-
+        // Intentar de nuevo en 3 segundos si no se cumplen las condiciones
+        if (_sessionActive && _messages.isNotEmpty) {
+          _programarAutoGuardadoFuturo(segundos: 3);
+        }
+      }
+    });
+  }
 
   void _iniciarAutoSave() {
-    if (!_sessionActive) return;
+    if (!_sessionActive) {
+      print('⚠️ No se puede iniciar auto-guardado: sesión no activa');
+      return;
+    }
 
     _detenerAutoSave();
+
+    print('🔄 INICIANDO AUTO-GUARDADO: Cada $_autoSaveInterval segundos');
 
     _autoSaveTimer = Timer.periodic(
       const Duration(seconds: _autoSaveInterval),
       (timer) {
-        if (_sessionActive && _messages.isNotEmpty && !_isThinking) {
-          _autoGuardarSesion();
+        print(
+            '⏰ TIMER AUTO-GUARDADO DISPARADO - ${DateTime.now().toIso8601String()}');
+
+        // Verificar condiciones
+        if (!_sessionActive) {
+          print('❌ Timer: Sesión no activa');
+          return;
         }
+
+        if (_messages.isEmpty) {
+          print('❌ Timer: No hay mensajes');
+          return;
+        }
+
+        if (_isEndingSession) {
+          print('❌ Timer: Sesión terminando');
+          return;
+        }
+
+        print('✅ Timer: Condiciones OK - Ejecutando auto-guardado');
+
+        // Ejecutar auto-guardado
+        _autoGuardarSesion();
       },
     );
-
-    developer
-        .log('🔄 AUTO-GUARDADO INICIADO: Cada $_autoSaveInterval segundos');
   }
 
   void _detenerAutoSave() {
@@ -430,20 +487,74 @@ void addMessage(String text) async {
   }
 
   Future<void> _autoGuardarSesion() async {
-    if (_messages.isEmpty || _isEndingSession || !_sessionActive || _isThinking)
+    // ========== DIAGNÓSTICO DETALLADO ==========
+    print('🔍 DIAGNÓSTICO AUTO-GUARDADO:');
+    print('   • _messages.isEmpty: ${_messages.isEmpty}');
+    print('   • _isEndingSession: $_isEndingSession');
+    print('   • _sessionActive: $_sessionActive');
+    print('   • _isThinking: $_isThinking');
+    print('   • Mensajes en lista: ${_messages.length}');
+    // ========== FIN DIAGNÓSTICO ==========
+
+    if (_messages.isEmpty) {
+      print('⏸️ Auto-guardado omitido - No hay mensajes');
       return;
+    }
+
+    if (_isEndingSession) {
+      print('⏸️ Auto-guardado omitido - Sesión terminando');
+      return;
+    }
+
+    if (!_sessionActive) {
+      print('⚠️ AUTO-GUARDADO BLOQUEADO: Sesión no activa');
+      print('⚠️ Reactivando sesión automáticamente...');
+      _sessionActive = true;
+      _notifySessionStateChanged();
+    }
+
+    // ========== CAMBIO IMPORTANTE: Programar auto-guardado si IA está pensando ==========
+    if (_isThinking) {
+      print('⏸️ IA está pensando - Programando auto-guardado para 5 segundos');
+      _programarAutoGuardadoFuturo(segundos: 5);
+      return;
+    }
+    // ========== FIN DEL CAMBIO ==========
 
     try {
       print('💾 AUTO-GUARDANDO SESIÓN...');
+      print('📊 Total mensajes: ${_messages.length}');
 
-      if (_currentSessionId == null) {
-        _currentSessionId = DateTime.now().millisecondsSinceEpoch.toString();
+      // Mostrar feedback visual
+      if (showSnackBar != null) {
+        showSnackBar!.call('💾 Guardando conversación...');
       }
 
-      final mensajesCifrados = await CifradoService.cifrarMensajes(
-        _messages.map((m) => m.toJson()).toList(),
-      );
+      // Crear ID de sesión si no existe
+      if (_currentSessionId == null) {
+        _currentSessionId = DateTime.now().toIso8601String();
+        print('🆔 Nuevo ID de sesión: $_currentSessionId');
+      }
 
+      // Filtrar mensajes válidos
+      final mensajesValidos =
+          _messages.where((m) => m.contenido != "TYPING_INDICATOR").toList();
+
+      if (mensajesValidos.isEmpty) {
+        print('⏸️ No hay mensajes válidos para guardar');
+        return;
+      }
+
+      // Cifrar mensajes
+      final mensajesParaCifrar =
+          mensajesValidos.map((m) => m.toJson()).toList();
+
+      print('🔐 Cifrando ${mensajesParaCifrar.length} mensajes...');
+      final mensajesCifrados =
+          await CifradoService.cifrarMensajes(mensajesParaCifrar);
+      print('✅ Mensajes cifrados');
+
+      // Crear sesión
       final sesionAutoGuardada = SesionChat(
         fecha: _currentSessionId!,
         usuario: _usuario,
@@ -453,10 +564,25 @@ void addMessage(String text) async {
         tituloDinamico: _autoSaveMarker,
       );
 
+      // Guardar en Firebase
+      print('📤 Guardando en Firebase...');
       await FirebaseChatStorage.saveSesionChat(sesionAutoGuardada);
-      print('✅ AUTO-GUARDADO EXITOSO: ${_messages.length} mensajes');
-    } catch (e) {
-      print('⚠️ ERROR EN AUTO-GUARDADO: $e');
+
+      print('🎉 AUTO-GUARDADO EXITOSO');
+
+      // Feedback visual de éxito
+      if (showSnackBar != null) {
+        showSnackBar!.call('✅ Conversación guardada automáticamente');
+      }
+    } catch (e, stackTrace) {
+      print('❌ ERROR EN AUTO-GUARDADO: $e');
+      print('📋 Stack trace: $stackTrace');
+
+      // Feedback visual de error
+      if (showSnackBar != null) {
+        showSnackBar!
+            .call('⚠️ Error al guardar: ${e.toString().split(':').first}');
+      }
     }
   }
 
@@ -508,8 +634,7 @@ void addMessage(String text) async {
 
   Future<void> _cargarSesionAnterior(SesionChat sesionAnterior) async {
     print('🔄 CARGANDO SESIÓN ANTERIOR DESDE HISTORIAL...');
-    print(
-        '📝 Mensajes en sesión anterior: ${sesionAnterior.mensajes.length}');
+    print('📝 Mensajes en sesión anterior: ${sesionAnterior.mensajes.length}');
 
     final mensajesParaDescifrar = sesionAnterior.mensajes.map((m) {
       final mensajeJson = m.toJson();
@@ -624,8 +749,7 @@ void addMessage(String text) async {
       }
 
       if (!sedeEncontrada) {
-        print(
-            '❌❌❌ ERROR CRÍTICO: NO SE ENCONTRÓ SEDE PARA EL ESTUDIANTE ❌❌❌');
+        print('❌❌❌ ERROR CRÍTICO: NO SE ENCONTRÓ SEDE PARA EL ESTUDIANTE ❌❌❌');
         print('❌ User UID: ${user.uid}');
         print('❌ User email: ${user.email}');
         print('❌ Se usará "sede central" como fallback');
@@ -712,8 +836,6 @@ void addMessage(String text) async {
     });
   }
 
-
-
   void diagnosticarGuardado() async {
     print('=== DIAGNÓSTICO DE GUARDADO ===');
     print('Mensajes en memoria: ${_messages.length}');
@@ -747,8 +869,7 @@ void addMessage(String text) async {
 
   Future<void> endSession() async {
     if (_isEndingSession) {
-      print(
-          '⚠️ _endSession ya está en ejecución, ignorando llamada duplicada');
+      print('⚠️ _endSession ya está en ejecución, ignorando llamada duplicada');
       return;
     }
 

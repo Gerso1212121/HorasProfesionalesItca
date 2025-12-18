@@ -1,24 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:horas2/Frontend/Modules/IABotScreen/MOdels/mensajes.dart';
-import 'package:horas2/Frontend/Modules/IABotScreen/ChatBotScreen.dart'
-    hide TypingIndicator;
 import 'package:horas2/Frontend/Modules/IABotScreen/components/TypingIndicator.dart';
 
-
-
-// Message Bubble
+// OPTIMIZACIÓN: MessageBubble con animaciones y mejor rendimiento visual
 class MessageBubble extends StatelessWidget {
   final Mensaje message;
   final bool isUser;
   final bool showTypingIndicator;
 
   const MessageBubble({
-    Key? key,
+    super.key,
     required this.message,
     required this.isUser,
     this.showTypingIndicator = false,
-  }) : super(key: key);
+  });
 
   String _formatTime(String fecha) {
     try {
@@ -31,112 +27,162 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
       child: Row(
         mainAxisAlignment:
             isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isUser) _buildAssistantAvatar(),
-          if (!isUser) const SizedBox(width: 8),
+          if (!isUser) const SizedBox(width: 12),
           Flexible(
-            child: Container(
-              padding: const EdgeInsets.all(14),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: isUser ? const Color(0xFF86A8E7) : Colors.white,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(20),
+                  topRight: const Radius.circular(20),
+                  bottomLeft: isUser
+                      ? const Radius.circular(20)
+                      : const Radius.circular(4),
+                  bottomRight: isUser
+                      ? const Radius.circular(4)
+                      : const Radius.circular(20),
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                    color: Colors.black.withOpacity(isUser ? 0.15 : 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 3),
                   ),
                 ],
-                border:
-                    isUser ? null : Border.all(color: const Color(0xFFE0E0E0)),
+                border: isUser
+                    ? null
+                    : Border.all(
+                        color: const Color(0xFFEEEEEE),
+                        width: 1,
+                      ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Encabezado del mensaje
                   Text(
                     isUser ? "Tú" : "Cerebrin",
                     style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: isUser ? Colors.white70 : const Color(0xFF666666),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: isUser
+                          ? Colors.white.withOpacity(0.9)
+                          : const Color(0xFF666666),
+                      letterSpacing: 0.5,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
+
+                  // Contenido del mensaje o indicador de typing
                   showTypingIndicator
-                      ?  TypingIndicator()
+                      ? TypingIndicator()
                       : Text(
                           message.contenido,
                           style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: isUser ? Colors.white : Colors.black87,
-                            height: 1.4,
+                            fontSize: 15,
+                            color:
+                                isUser ? Colors.white : const Color(0xFF333333),
+                            height: 1.5,
                           ),
                         ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _formatTime(message.fecha),
-                    style: GoogleFonts.inter(
-                      fontSize: 10,
-                      color: isUser ? Colors.white70 : const Color(0xFF999999),
-                    ),
+
+                  const SizedBox(height: 12),
+
+                  // Timestamp
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(
+                        _formatTime(message.fecha),
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: isUser
+                              ? Colors.white.withOpacity(0.7)
+                              : const Color(0xFF888888),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           ),
-          if (isUser) const SizedBox(width: 8),
+          if (isUser) const SizedBox(width: 12),
           if (isUser) _buildUserAvatar(),
         ],
       ),
     );
   }
-Widget _buildAssistantAvatar() {
-  return Container(
-    width: 62,
-    height: 62,
-    decoration: BoxDecoration(
-      color: const Color(0xFF86A8E7),
-      shape: BoxShape.circle,
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.1),
-          blurRadius: 6,
-          offset: const Offset(0, 3),
+
+  Widget _buildAssistantAvatar() {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF86A8E7), Color(0xFF91EAE4)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-      ],
-    ),
-    child: ClipOval(
-      child: Image.asset(
-        'assets/images/brainprofile.png',
-        width: 62,
-        height: 62,
-        fit: BoxFit.contain,  // Mantiene proporciones pero muestra toda la imagen
-        alignment: Alignment.center,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF86A8E7).withOpacity(0.4),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-    ),
-  );
-}
-
-
+      child: ClipOval(
+        child: Image.asset(
+          'assets/images/brainprofile.png',
+          width: 40,
+          height: 40,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.high,
+        ),
+      ),
+    );
+  }
 
   Widget _buildUserAvatar() {
     return Container(
-      width: 32,
-      height: 32,
-      decoration: const BoxDecoration(
-        color: Color(0xFFF66B7D),
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFF66B7D), Color(0xFFF8939C)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFF66B7D).withOpacity(0.3),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: const Icon(
-        Icons.person,
+        Icons.person_rounded,
         color: Colors.white,
-        size: 18,
+        size: 20,
       ),
     );
   }

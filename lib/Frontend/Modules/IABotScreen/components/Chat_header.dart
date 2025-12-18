@@ -1,71 +1,113 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:horas2/Frontend/Constants/AppConstants.dart';
 
-
-// Chat Header
+// OPTIMIZACIÓN: ChatHeader ahora es completamente const
 class ChatHeader extends StatelessWidget {
   final String title;
-   final VoidCallback? onMenuPressed;
+  final VoidCallback? onMenuPressed;
 
   const ChatHeader({
-    Key? key,
+    super.key,
     this.title = "Asistente AI",
-     this.onMenuPressed,
-  }) : super(key: key);
+    this.onMenuPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
           colors: [Color(0xFFB2F5DB), Color(0xFF86A8E7)],
           begin: Alignment.bottomLeft,
           end: Alignment.topRight,
+          stops: [0.1, 0.9],
         ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(10),
-          bottomRight: Radius.circular(10),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF86A8E7).withOpacity(0.2),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      padding: const EdgeInsets.only(top: 40, bottom: 0, left: 16, right: 60),
-      child: _buildTopRow(),
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 16,
+        bottom: 20,
+        left: 16,
+        right: 16,
+      ),
+      child: _buildHeaderContent(),
     );
   }
 
-  Widget _buildTopRow() {
+  Widget _buildHeaderContent() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // MENÚ DE HAMBURGUESA - BOTÓN IZQUIERDO
-        IconButton(
-          icon: const Icon(
-              Icons.menu,
-              color: Color.fromARGB(255, 255, 255, 255),
-              size: 35,
+        // Botón de menú hamburguesa - OPTIMIZACIÓN: Mejor tap target
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: IconButton(
+            icon: const Icon(
+              Icons.menu_rounded,
+              color: Colors.white,
+              size: 26,
             ),
-          onPressed: onMenuPressed,
+            onPressed: onMenuPressed,
+            splashRadius: 20,
+            padding: const EdgeInsets.all(8),
+          ),
         ),
 
-        // Logo/Texto de la app (centrado)
+        // Título centrado con mejor tipografía
         Expanded(
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 title,
+                textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.itim(
-                  fontSize: 26,
+                maxLines: 1,
+                style: GoogleFonts.inter(
+                  fontSize: 22,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
+                  letterSpacing: -0.5,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 2,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
                 ),
               ),
- 
+              const SizedBox(height: 4),
+              Text(
+                "Tu asistente emocional",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white.withOpacity(0.9),
+                ),
+              ),
             ],
           ),
         ),
- 
+
+        // Espaciador para mantener balance visual
+        const SizedBox(width: 48),
       ],
     );
   }

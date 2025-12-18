@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:horas2/Frontend/widgets/CheckList/WheelSelector.dart';
+import 'package:horas2/Frontend/Modules/Auth/widgets/WheelSelector.dart';
 
 class WheelSelectorField extends StatelessWidget {
   final List<String> items;
