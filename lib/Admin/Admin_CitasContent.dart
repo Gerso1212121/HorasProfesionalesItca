@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CitaServiceIntegrado {
@@ -24,63 +23,84 @@ class CitaServiceIntegrado {
     }
   }
 
-  Future<Map<String, dynamic>?> getInfoEstudiante(String estudianteUid) async {
+  Future<Map<String, dynamic>?> getInfoEstudianteByUid(String uid) async {
     try {
-      // Buscar en la colección de alertas (que tiene la sede)
-      final querySnapshot = await _firestore
-          .collection('alertas_suicidio')
-          .where('usuario_email', isNotEqualTo: null)
-          .get();
-
-      for (final doc in querySnapshot.docs) {
-        final data = doc.data();
-        // Aquí necesitarías una manera de relacionar estudianteUid con el usuario
-        // Normalmente usarías el email o un campo común
-        // Por ahora usaremos el UID de Firebase
-        if (doc.id == estudianteUid) {
-          return {
-            'sede': data['sede'] ?? 'Sin sede',
-            'email': data['usuario_email'] ?? '',
-            'nombre': data['usuario_nombre'] ?? '',
-            'telefono': data['usuario_telefono'] ?? '',
-            'tipo_alerta': data['tipo_alerta'] ?? ''
-          };
-        }
+      print('🔍 Buscando estudiante por UID: $uid');
+      
+      if (uid.isEmpty || uid == 'null') {
+        print('⚠️ UID vacío o nulo');
+        return null;
       }
       
-      return null;
-    } catch (e) {
-      print('❌ Error obteniendo info estudiante: $e');
-      return null;
-    }
-  }
-
-  String getAdminSede() {
-    final user = FirebaseAuth.instance.currentUser;
-    final email = user?.email?.toLowerCase() ?? '';
-    
-    print('📧 Email admin: $email');
-    
-    if (email.contains('sanmiguel') || email.contains('san miguel')) {
-      return 'san miguel';
-    } else if (email.contains('lima')) {
-      return 'lima';
-    } else if (email.contains('arequipa')) {
-      return 'arequipa';
-    }
-    return 'general';
-  }
-
-  Future<List<Map<String, dynamic>>> getAlertasSede(String sede) async {
-    try {
-      final querySnapshot = await _firestore
-          .collection('alertas_suicidio')
-          .where('sede', isEqualTo: sede)
+      // Buscar en la colección de estudiantes de Firestore por UID
+      final doc = await _firestore
+          .collection('estudiantes')
+          .doc(uid)
           .get();
 
-      return querySnapshot.docs.map((doc) => doc.data()).toList();
+      if (doc.exists) {
+        final data = doc.data()!;
+        print('✅ Estudiante encontrado por UID: ${doc.id}');
+        
+        return {
+          'uid': doc.id,
+          'sede': data['sede'] ?? 'Sin sede',
+          'correo': data['correo'] ?? '',
+          'nombre': '${data['nombre'] ?? ''} ${data['apellido'] ?? ''}'.trim(),
+          'telefono': data['telefono'] ?? '',
+          'carnet': data['carnet'] ?? '',
+          'carrera': data['carrera'] ?? '',
+          'anio_ingreso': data['anio_ingreso'] ?? '',
+          'tipo_usuario': data['tipo_usuario'] ?? '',
+          'verificado_itca': data['verificado_itca'] ?? false,
+        };
+      } else {
+        print('⚠️ No se encontró estudiante con UID: $uid');
+        return null;
+      }
     } catch (e) {
-      print('❌ Error obteniendo alertas: $e');
+      print('❌ Error obteniendo info estudiante por UID: $e');
+      return null;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getAllEstudiantes() async {
+    try {
+      print('🔍 Obteniendo TODOS los estudiantes...');
+      
+      final querySnapshot = await _firestore
+          .collection('estudiantes')
+          .get();
+
+      print('✅ Total estudiantes en BD: ${querySnapshot.docs.length}');
+      
+      if (querySnapshot.docs.isNotEmpty) {
+        print('📋 Primer estudiante de la lista:');
+        final firstDoc = querySnapshot.docs.first.data();
+        print('  Nombre: ${firstDoc['nombre']} ${firstDoc['apellido']}');
+        print('  Correo: ${firstDoc['correo']}');
+        print('  Sede: ${firstDoc['sede']}');
+      }
+
+      return querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'uid': doc.id,
+          'anio_ingreso': data['anio_ingreso'] ?? '',
+          'apellido': data['apellido'] ?? '',
+          'carnet': data['carnet'] ?? '',
+          'carrera': data['carrera'] ?? '',
+          'correo': data['correo'] ?? '',
+          'nombre': data['nombre'] ?? '',
+          'sede': data['sede'] ?? '',
+          'telefono': data['telefono'] ?? '',
+          'tipo_usuario': data['tipo_usuario'] ?? '',
+          'verificado_itca': data['verificado_itca'] ?? false,
+          'nombre_completo': '${data['nombre'] ?? ''} ${data['apellido'] ?? ''}'.trim(),
+        };
+      }).toList();
+    } catch (e) {
+      print('❌ Error obteniendo todos los estudiantes: $e');
       return [];
     }
   }
@@ -100,7 +120,7 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
   bool _loading = true;
   List<Map<String, dynamic>> _citas = [];
   List<Map<String, dynamic>> _citasFiltradas = [];
-  String _sedeAdmin = '';
+  List<Map<String, dynamic>> _estudiantes = [];
   String _filtroEstado = 'todas';
   String _filtroSede = 'todas';
   List<String> _sedesDisponibles = ['todas'];
@@ -108,12 +128,11 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
   
   // Estadísticas
   int _totalCitas = 0;
-  int _totalAlertas = 0;
+  int _totalEstudiantes = 0;
 
   @override
   void initState() {
     super.initState();
-    _sedeAdmin = _service.getAdminSede();
     _initData();
     _searchController.addListener(_onSearchChanged);
   }
@@ -128,22 +147,91 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
     setState(() => _loading = true);
     
     try {
-      // Obtener citas y filtrar por sede
+      print('\n========================================');
+      print('🔄 INICIANDO CARGA DE DATOS - MODO ADMIN');
+      print('========================================\n');
+      
+      // 1. Obtener TODOS los estudiantes
+      final estudiantes = await _service.getAllEstudiantes();
+      
+      // 2. Obtener todas las citas de Supabase
+      print('📋 Obteniendo citas de Supabase...');
       final citas = await _service.getCitas();
-      final citasConSede = await _enriquecerCitasConSede(citas);
+      print('✅ Citas obtenidas: ${citas.length}');
       
-      // Obtener alertas de la sede del admin
-      final alertas = await _service.getAlertasSede(_sedeAdmin);
+      // 3. Enriquecer cada cita con información del estudiante
+      print('\n🔗 Enlazando citas con estudiantes...');
+      final citasEnriquecidas = <Map<String, dynamic>>[];
       
-      // Extraer sedes únicas
+      int citasConEstudiante = 0;
+      int citasSinEstudiante = 0;
+      
+      for (final cita in citas) {
+        final estudianteUid = cita['estudiante_uid']?.toString();
+        
+        if (estudianteUid != null && estudianteUid.isNotEmpty && estudianteUid != 'null') {
+          print('\n🔍 Procesando cita con UID: $estudianteUid');
+          
+          // Buscar información del estudiante
+          final estudianteInfo = await _service.getInfoEstudianteByUid(estudianteUid);
+          
+          if (estudianteInfo != null) {
+            print('✅ Estudiante encontrado: ${estudianteInfo['nombre']}');
+            citasConEstudiante++;
+            
+            Map<String, dynamic> citaModificada = Map.from(cita);
+            citaModificada['sede_estudiante'] = estudianteInfo['sede'] ?? 'Sin sede';
+            citaModificada['info_estudiante'] = estudianteInfo;
+            citaModificada['nombre_estudiante'] = estudianteInfo['nombre'];
+            citaModificada['correo_estudiante'] = estudianteInfo['correo'];
+            citaModificada['telefono_estudiante'] = estudianteInfo['telefono'];
+            
+            citasEnriquecidas.add(citaModificada);
+          } else {
+            print('⚠️ Estudiante NO encontrado para UID: $estudianteUid');
+            citasSinEstudiante++;
+            
+            // Añadir cita sin info de estudiante
+            Map<String, dynamic> citaModificada = Map.from(cita);
+            citaModificada['sede_estudiante'] = 'Sin sede';
+            citaModificada['info_estudiante'] = null;
+            citaModificada['nombre_estudiante'] = 'Usuario no encontrado';
+            citaModificada['correo_estudiante'] = '';
+            citaModificada['telefono_estudiante'] = '';
+            
+            citasEnriquecidas.add(citaModificada);
+          }
+        } else {
+          print('⚠️ Cita sin UID válido');
+          citasSinEstudiante++;
+          
+          // Añadir cita sin UID
+          Map<String, dynamic> citaModificada = Map.from(cita);
+          citaModificada['sede_estudiante'] = 'Sin sede';
+          citaModificada['info_estudiante'] = null;
+          citaModificada['nombre_estudiante'] = 'Usuario no identificado';
+          citaModificada['correo_estudiante'] = '';
+          citaModificada['telefono_estudiante'] = '';
+          
+          citasEnriquecidas.add(citaModificada);
+        }
+      }
+      
+      print('\n📊 RESULTADOS DEL ENLACE:');
+      print('  Total citas: ${citas.length}');
+      print('  Citas con estudiante encontrado: $citasConEstudiante');
+      print('  Citas sin estudiante: $citasSinEstudiante');
+      print('  Citas enriquecidas: ${citasEnriquecidas.length}');
+      
+      // 4. Extraer sedes únicas de las citas enriquecidas
       final sedesSet = <String>{};
       final estadosSet = <String>{};
       
-      for (final cita in citasConSede) {
-        final sede = cita['sede_estudiante']?.toString().toLowerCase() ?? '';
+      for (final cita in citasEnriquecidas) {
+        final sede = cita['sede_estudiante']?.toString() ?? '';
         final estado = cita['estado_cita']?.toString().toLowerCase() ?? '';
         
-        if (sede.isNotEmpty && sede != 'sin sede') sedesSet.add(sede);
+        if (sede.isNotEmpty && sede != 'Sin sede') sedesSet.add(sede);
         if (estado.isNotEmpty) estadosSet.add(estado);
       }
       
@@ -151,50 +239,38 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
       final estadosList = estadosSet.toList()..sort();
       
       setState(() {
-        _citas = citasConSede;
-        _citasFiltradas = citasConSede;
+        _citas = citasEnriquecidas;
+        _citasFiltradas = citasEnriquecidas;
+        _estudiantes = estudiantes;
         _sedesDisponibles = ['todas', ...sedesList];
         _estadosDisponibles = ['todas', ...estadosList];
-        _totalCitas = citasConSede.length;
-        _totalAlertas = alertas.length;
+        _totalCitas = citasEnriquecidas.length;
+        _totalEstudiantes = estudiantes.length;
         _loading = false;
       });
       
-      print('✅ Datos cargados: ${_citas.length} citas, ${alertas.length} alertas');
-    } catch (e) {
-      print('❌ Error inicializando datos: $e');
-      setState(() => _loading = false);
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> _enriquecerCitasConSede(
-      List<Map<String, dynamic>> citas) async {
-    final citasEnriquecidas = <Map<String, dynamic>>[];
-    
-    for (final cita in citas) {
-      final estudianteUid = cita['estudiante_uid']?.toString();
-      Map<String, dynamic> citaModificada = Map.from(cita);
+      _aplicarFiltros();
       
-      if (estudianteUid != null && estudianteUid.isNotEmpty) {
-        final estudianteInfo = await _service.getInfoEstudiante(estudianteUid);
-        if (estudianteInfo != null) {
-          citaModificada['sede'] = estudianteInfo['sede'];
-          citaModificada['info_estudiante'] = estudianteInfo;
-        } else {
-          citaModificada['sede'] = 'Sin sede';
-          citaModificada['info_estudiante'] = null;
-        }
-
-
-      } else {
-        citaModificada['sede'] = 'Sin sede';
-        citaModificada['info_estudiante'] = null;
+      print('\n✅ CARGA COMPLETADA:');
+      print('👥 Estudiantes en BD: $estudiantes.length');
+      print('📅 Citas mostradas: ${_citas.length}');
+      print('🎯 Citas filtradas: ${_citasFiltradas.length}');
+      print('📍 Sedes disponibles: ${_sedesDisponibles.length}');
+      
+      if (_citas.isNotEmpty) {
+        print('\n🔍 PRIMERA CITA:');
+        final primeraCita = _citas.first;
+        print('  Nombre: ${primeraCita['nombre_estudiante']}');
+        print('  Sede: ${primeraCita['sede_estudiante']}');
+        print('  Motivo: ${primeraCita['motivo_cita']}');
+        print('  Estado: ${primeraCita['estado_cita']}');
       }
       
-      citasEnriquecidas.add(citaModificada);
+    } catch (e) {
+      print('❌ ERROR inicializando datos: $e');
+      print('🔄 Stack trace: ${e.toString()}');
+      setState(() => _loading = false);
     }
-    
-    return citasEnriquecidas;
   }
 
   void _onSearchChanged() {
@@ -211,12 +287,21 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
       final diagnostico = cita['diagnostico']?.toString().toLowerCase() ?? '';
       final sede = cita['sede_estudiante']?.toString().toLowerCase() ?? '';
       final estado = cita['estado_cita']?.toString().toLowerCase() ?? '';
+      final correo = cita['correo_estudiante']?.toString().toLowerCase() ?? '';
+      final estudianteInfo = cita['info_estudiante'] as Map<String, dynamic>?;
+      final carnet = estudianteInfo?['carnet']?.toString().toLowerCase() ?? '';
+      final telefono = cita['telefono_estudiante']?.toString().toLowerCase() ?? '';
+      final carrera = estudianteInfo?['carrera']?.toString().toLowerCase() ?? '';
       
       return nombre.contains(query) ||
              motivo.contains(query) ||
              diagnostico.contains(query) ||
              sede.contains(query) ||
-             estado.contains(query);
+             estado.contains(query) ||
+             correo.contains(query) ||
+             carnet.contains(query) ||
+             telefono.contains(query) ||
+             carrera.contains(query);
     }).toList();
     
     setState(() => _citasFiltradas = resultados);
@@ -228,8 +313,8 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
     // Filtrar por sede
     if (_filtroSede != 'todas') {
       resultados = resultados.where((cita) {
-        final sede = cita['sede_estudiante']?.toString().toLowerCase() ?? '';
-        return sede == _filtroSede.toLowerCase();
+        final sede = cita['sede_estudiante']?.toString() ?? '';
+        return sede == _filtroSede;
       }).toList();
     }
     
@@ -282,9 +367,13 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
     final estado = cita['estado_cita']?.toString() ?? 'pendiente';
     final diagnostico = cita['diagnostico']?.toString() ?? 'Sin diagnóstico';
     final notas = cita['notas_adicionales']?.toString();
-    final sede = cita['sede']?.toString() ?? 'Sin sede';
+    final sede = cita['sede_estudiante']?.toString() ?? 'Sin sede';
     final estudianteInfo = cita['info_estudiante'] as Map<String, dynamic>?;
     final confirmada = cita['confirmacion_cita'] == true;
+    final carnet = estudianteInfo?['carnet']?.toString() ?? '';
+    final verificadoItca = estudianteInfo?['verificado_itca'] == true;
+    final tipoUsuario = estudianteInfo?['tipo_usuario']?.toString() ?? '';
+    final esEstudianteItca = tipoUsuario == 'estudiante_itca';
 
     return Container(
       margin: const EdgeInsets.all(6),
@@ -330,7 +419,7 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
                           ),
                         ),
                         child: Icon(
-                          Icons.person,
+                          estudianteInfo != null ? Icons.person : Icons.person_off,
                           color: _getColorEstado(estado),
                           size: 20,
                         ),
@@ -350,6 +439,14 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
+                            if (carnet.isNotEmpty)
+                              Text(
+                                'Carnet: $carnet',
+                                style: GoogleFonts.itim(
+                                  fontSize: 10,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
                             const SizedBox(height: 4),
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -388,7 +485,7 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          sede.toUpperCase(),
+                          sede,
                           style: GoogleFonts.itim(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
@@ -453,24 +550,26 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
                   const SizedBox(height: 12),
                   
                   // Badges
-                  if (diagnostico != 'Sin diagnóstico' ||
-                      notas != null ||
-                      estudianteInfo != null ||
-                      confirmada)
-                    Wrap(
-                      spacing: 4,
-                      runSpacing: 4,
-                      children: [
-                        if (diagnostico != 'Sin diagnóstico')
-                          _buildMiniBadge('💊', Colors.purple),
-                        if (notas != null && notas.isNotEmpty)
-                          _buildMiniBadge('📝', Colors.orange),
-                        if (confirmada)
-                          _buildMiniBadge('✓', Colors.green),
-                        if (estudianteInfo != null)
-                          _buildMiniBadge('👤', Colors.blue),
-                      ],
-                    ),
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: [
+                      if (estudianteInfo == null)
+                        _buildMiniBadge('❓', Colors.grey, 'Usuario no encontrado'),
+                      if (diagnostico != 'Sin diagnóstico')
+                        _buildMiniBadge('💊', Colors.purple, 'Tiene diagnóstico'),
+                      if (notas != null && notas.isNotEmpty)
+                        _buildMiniBadge('📝', Colors.orange, 'Tiene notas'),
+                      if (confirmada)
+                        _buildMiniBadge('✓', Colors.green, 'Confirmada'),
+                      if (verificadoItca)
+                        _buildMiniBadge('✅', Colors.blue, 'Verificado ITCA'),
+                      if (carnet.isNotEmpty)
+                        _buildMiniBadge('#', Colors.teal, 'Carnet: $carnet'),
+                      if (esEstudianteItca)
+                        _buildMiniBadge('🎓', Colors.purple, 'Estudiante ITCA'),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -480,19 +579,22 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
     );
   }
 
-  Widget _buildMiniBadge(String emoji, Color color) {
-    return Container(
-      width: 24,
-      height: 24,
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        shape: BoxShape.circle,
-        border: Border.all(color: color.withOpacity(0.3), width: 1),
-      ),
-      child: Center(
-        child: Text(
-          emoji,
-          style: const TextStyle(fontSize: 12),
+  Widget _buildMiniBadge(String emoji, Color color, String tooltip) {
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        width: 24,
+        height: 24,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          shape: BoxShape.circle,
+          border: Border.all(color: color.withOpacity(0.3), width: 1),
+        ),
+        child: Center(
+          child: Text(
+            emoji,
+            style: const TextStyle(fontSize: 12),
+          ),
         ),
       ),
     );
@@ -508,7 +610,13 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
   }
 
   Widget _buildDetallesModal(Map<String, dynamic> cita) {
+    final estudianteInfo = cita['info_estudiante'] as Map<String, dynamic>?;
+    final esEstudianteItca = estudianteInfo?['tipo_usuario'] == 'estudiante_itca';
+    final verificadoItca = estudianteInfo?['verificado_itca'] == true;
+    final tieneEstudiante = estudianteInfo != null;
+    
     return Container(
+      height: MediaQuery.of(context).size.height * 0.9,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -543,7 +651,7 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
                     border: Border.all(color: Colors.white, width: 3),
                   ),
                   child: Icon(
-                    Icons.person,
+                    tieneEstudiante ? Icons.person : Icons.person_off,
                     color: _getColorEstado(cita['estado_cita']?.toString() ?? ''),
                     size: 24,
                   ),
@@ -554,7 +662,7 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        cita['nombre_estudiante']?.toString() ?? 'Sin nombre',
+                        cita['nombre_estudiante']?.toString() ?? 'Usuario no identificado',
                         style: GoogleFonts.itim(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -563,12 +671,20 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Sede: ${cita['sede']?.toString().toUpperCase() ?? 'SIN SEDE'}',
+                        'Sede: ${cita['sede_estudiante']?.toString() ?? 'SIN SEDE'}',
                         style: GoogleFonts.itim(
                           fontSize: 12,
                           color: Colors.white.withOpacity(0.9),
                         ),
                       ),
+                      if (estudianteInfo?['carnet'] != null)
+                        Text(
+                          'Carnet: ${estudianteInfo!['carnet']}',
+                          style: GoogleFonts.itim(
+                            fontSize: 12,
+                            color: Colors.white.withOpacity(0.9),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -584,33 +700,48 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                // Información de contacto
-                if (cita['info_estudiante'] != null)
+                // Información del estudiante
+                if (tieneEstudiante)
                   _buildInfoSection(
-                    '📱 Contacto',
+                    '👤 Información del Estudiante',
                     [
-                      ['Email', cita['info_estudiante']['email'] ?? ''],
-                      ['Teléfono', cita['info_estudiante']['telefono'] ?? ''],
+                      ['Carnet', estudianteInfo!['carnet'] ?? 'No tiene'],
+                      ['Correo', estudianteInfo['correo'] ?? 'No tiene'],
+                      ['Teléfono', estudianteInfo['telefono'] ?? 'No tiene'],
+                      ['Carrera', estudianteInfo['carrera'] ?? 'No especificada'],
+                      ['Año Ingreso', estudianteInfo['anio_ingreso'] ?? 'No especificado'],
+                      ['Tipo Usuario', estudianteInfo['tipo_usuario'] ?? 'No especificado'],
+                      ['Verificado ITCA', verificadoItca ? '✅ Sí' : '❌ No'],
+                      ['Estudiante ITCA', esEstudianteItca ? '✅ Sí' : '❌ No'],
+                    ],
+                  )
+                else
+                  _buildInfoSection(
+                    '👤 Información del Estudiante',
+                    [
+                      ['Estado', '❌ NO ENCONTRADO'],
+                      ['UID en cita', cita['estudiante_uid']?.toString() ?? 'No disponible'],
+                      ['Nota', 'El estudiante con este UID no existe en la base de datos de estudiantes'],
                     ],
                   ),
                 
                 // Información de la cita
                 _buildInfoSection(
-                  '📅 Cita',
+                  '📅 Información de la Cita',
                   [
                     ['Fecha', _formatearFecha(cita['fecha_cita'])],
-                    ['Estado', cita['estado_cita']?.toString() ?? ''],
-                    ['Confirmada', cita['confirmacion_cita'] == true ? 'Sí' : 'No'],
+                    ['Estado', cita['estado_cita']?.toString() ?? 'No especificado'],
+                    ['Confirmada', cita['confirmacion_cita'] == true ? '✅ Sí' : '❌ No'],
                   ],
                 ),
                 
                 // Detalles médicos
                 _buildInfoSection(
-                  '🏥 Detalles',
+                  '🏥 Detalles Médicos',
                   [
-                    ['Motivo', cita['motivo_cita']?.toString() ?? ''],
-                    ['Diagnóstico', cita['diagnostico']?.toString() ?? ''],
-                    ['Notas', cita['notas_adicionales']?.toString() ?? ''],
+                    ['Motivo', cita['motivo_cita']?.toString() ?? 'No especificado'],
+                    ['Diagnóstico', cita['diagnostico']?.toString() ?? 'Sin diagnóstico'],
+                    ['Notas Adicionales', cita['notas_adicionales']?.toString() ?? 'No hay notas'],
                   ],
                 ),
                 
@@ -620,7 +751,9 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () {},
+                        onPressed: () {
+                          // TODO: Implementar edición
+                        },
                         icon: const Icon(Icons.edit, size: 18),
                         label: Text('Editar', style: GoogleFonts.itim()),
                         style: ElevatedButton.styleFrom(
@@ -636,7 +769,12 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () {},
+                        onPressed: () {
+                          final telefono = estudianteInfo?['telefono'] ?? '';
+                          if (telefono.isNotEmpty) {
+                            // TODO: Implementar llamada
+                          }
+                        },
                         icon: const Icon(Icons.phone, size: 18),
                         label: Text('Llamar', style: GoogleFonts.itim()),
                         style: ElevatedButton.styleFrom(
@@ -687,7 +825,7 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
-                    width: 80,
+                    width: 100,
                     child: Text(
                       item[0],
                       style: GoogleFonts.itim(
@@ -750,7 +888,7 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Gestión de Citas',
+                        'Gestión de Citas - ADMIN',
                         style: GoogleFonts.itim(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -758,11 +896,10 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
                         ),
                       ),
                       Text(
-                        'Sede: ${_sedeAdmin.toUpperCase()}',
+                        'Vista completa de todas las sedes',
                         style: GoogleFonts.itim(
                           fontSize: 12,
                           color: Colors.blue.shade600,
-                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
@@ -772,15 +909,15 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
                 Row(
                   children: [
                     _buildCounterBadge(
-                      '${_totalCitas}',
+                      '$_totalCitas',
                       Icons.calendar_today,
                       Colors.blue,
                     ),
                     const SizedBox(width: 8),
                     _buildCounterBadge(
-                      '${_totalAlertas}',
-                      Icons.warning,
-                      Colors.orange,
+                      '$_totalEstudiantes',
+                      Icons.group,
+                      Colors.green,
                     ),
                   ],
                 ),
@@ -793,7 +930,7 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
             TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Buscar citas...',
+                hintText: 'Buscar por nombre, carnet, motivo, sede...',
                 hintStyle: GoogleFonts.itim(color: Colors.grey.shade500),
                 prefixIcon: Icon(Icons.search, color: Colors.grey.shade500),
                 filled: true,
@@ -903,7 +1040,7 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
             final sede = _sedesDisponibles[index];
             return ListTile(
               title: Text(
-                sede == 'todas' ? 'Todas las sedes' : sede.toUpperCase(),
+                sede == 'todas' ? 'Todas las sedes' : sede,
                 style: GoogleFonts.itim(),
               ),
               leading: Icon(
@@ -996,7 +1133,7 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
         crossAxisCount: 3,
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
-        childAspectRatio: 0.75,
+        childAspectRatio: 1.6,
       ),
       itemCount: _citasFiltradas.length,
       itemBuilder: (context, index) => _buildCitaCard(_citasFiltradas[index], index),
@@ -1022,7 +1159,7 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Sede: ${_sedeAdmin.toUpperCase()}',
+            'Vista completa - Todas las sedes',
             style: GoogleFonts.itim(
               fontSize: 12,
               color: Colors.grey.shade500,
@@ -1047,7 +1184,7 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
           Text(
             _searchController.text.isNotEmpty
                 ? 'No se encontraron resultados'
-                : 'No hay citas disponibles',
+                : 'No hay citas registradas',
             style: GoogleFonts.itim(
               fontSize: 16,
               color: Colors.grey.shade600,
@@ -1055,7 +1192,7 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Sede: ${_sedeAdmin.toUpperCase()}',
+            'Estudiantes en BD: $_totalEstudiantes',
             style: GoogleFonts.itim(
               fontSize: 12,
               color: Colors.grey.shade500,
