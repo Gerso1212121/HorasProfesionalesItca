@@ -1139,7 +1139,7 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
       itemBuilder: (context, index) => _buildCitaCard(_citasFiltradas[index], index),
     );
   }
-
+    
   Widget _buildLoading() {
     return Center(
       child: Column(
