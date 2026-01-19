@@ -1,15 +1,12 @@
- 
-import 'dart:async';
-import 'dart:convert';
-import 'dart:io' show File;
-
-import 'package:flutter/foundation.dart';
-import 'package:intl/intl.dart';
+import 'dart:io';
+import 'dart:async' show TimeoutException;
+ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show Supabase, SupabaseClient, PostgrestException;
 import 'package:uuid/uuid.dart';
-
+import 'package:flutter/foundation.dart';
+ 
 class DatabaseHelper {
   static const _databaseName = "aplicacion_movil.db";
   static const _databaseVersion = 7;
@@ -41,9 +38,8 @@ class DatabaseHelper {
       version: _databaseVersion,
       onCreate: _onCreate,
       onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 8) {
-          // Cambia el número de versión según corresponda
-          await upgradeDiaryTableIfNeeded();
+        if (oldVersion < 7) {
+          await _createMetasTables(db);
         }
       },
     );
@@ -54,10 +50,9 @@ class DatabaseHelper {
 
   // ===============================================
 
-//!FIRABASEEEEEEEEEEEEEEEEEEEEEEEEEE
   Future<void> _onCreate(Database db, int version) async {
     // Crear tablas en orden (respetando las foreign keys)
-    await _createDiaryTables(db);
+
     // Tabla estudiante (usuario logueado)
     await db.execute('''
       CREATE TABLE IF NOT EXISTS "estudiante" (
@@ -144,7 +139,8 @@ CREATE TABLE agenda_cita (
   fecha_creacion       TEXT DEFAULT CURRENT_TIMESTAMP,   
   admin_confirmador    TEXT,
   fecha_confirmacion   TEXT,
-  FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE RESTRICT)
+  FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE RESTRICT
+)
 ''');
 
     // Tabla calendario
@@ -313,378 +309,6 @@ CREATE TABLE agenda_cita (
   //TODO MÉTODOS CRUD PARA ESTUDIANTE
 
   // ===============================================
-
-// ===============================================
-// MÉTODOS CRUD PARA DIARIO CON NUEVA ESTRUCTURA
-// ===============================================
-
-  /// Crear tabla de diario con nueva estructura
-  Future<void> _createDiaryTables(Database db) async {
-    await db.execute('''
-    CREATE TABLE IF NOT EXISTS diary_entries(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      date TEXT NOT NULL,
-      mood TEXT NOT NULL,
-      content_json TEXT NOT NULL,
-      compressed_image_paths TEXT,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    )
-  ''');
-
-    // Índices para mejorar el rendimiento
-    await db.execute('''
-    CREATE INDEX IF NOT EXISTS idx_diary_date ON diary_entries(date)
-  ''');
-  }
-
-// En DatabaseHelper.dart, modifica los métodos:
-Future<int> insertDiaryEntry({
-  required String title,
-  required DateTime date,
-  required String mood,
-  required String contentJson, // Cambiado de Map<String, dynamic> a String
-  List<String>? compressedImagePaths,
-}) async {
-  final db = await database;
-  
-  final entry = {
-    'title': title,
-    'date': date.toIso8601String(),
-    'mood': mood,
-    'content_json': contentJson, // Ya es string, no necesita jsonEncode
-    'compressed_image_paths': compressedImagePaths?.join('|') ?? '',
-    'created_at': DateTime.now().toIso8601String(),
-    'updated_at': DateTime.now().toIso8601String(),
-  };
-  
-  return await db.insert('diary_entries', entry);
-}
-
-Future<int> updateDiaryEntry({
-  required int id,
-  String? title,
-  DateTime? date,
-  String? mood,
-  String? contentJson, // Cambiado de Map<String, dynamic> a String
-  List<String>? compressedImagePaths,
-}) async {
-  final db = await database;
-  
-  final updates = <String, dynamic>{};
-  updates['updated_at'] = DateTime.now().toIso8601String();
-  
-  if (title != null) updates['title'] = title;
-  if (date != null) updates['date'] = date.toIso8601String();
-  if (mood != null) updates['mood'] = mood;
-  if (contentJson != null) updates['content_json'] = contentJson; // Ya es string
-  if (compressedImagePaths != null) {
-    updates['compressed_image_paths'] = compressedImagePaths.join('|');
-  }
-  
-  return await db.update(
-    'diary_entries',
-    updates,
-    where: 'id = ?',
-    whereArgs: [id],
-  );
-}
-
-  /// Obtener todas las entradas del diario
-  Future<List<Map<String, dynamic>>> getAllDiaryEntries() async {
-    final db = await database;
-
-    final List<Map<String, dynamic>> maps =
-        await db.query('diary_entries', orderBy: 'date DESC');
-
-    // Parsear campos JSON
-    return maps.map((map) {
-      try {
-        final contentJson = jsonDecode(map['content_json'] as String);
-        final imagePaths = (map['compressed_image_paths'] as String?)
-                ?.split('|')
-                .where((path) => path.isNotEmpty)
-                .toList() ??
-            [];
-
-        return {
-          ...map,
-          'content_json': contentJson,
-          'compressed_image_paths': imagePaths,
-        };
-      } catch (e) {
-        print('Error parsing diary entry: $e');
-        return map;
-      }
-    }).toList();
-  }
- 
-
-  /// Eliminar entrada de diario
-  Future<int> deleteDiaryEntry(int id) async {
-    final db = await database;
-    return await db.delete(
-      'diary_entries',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-  }
-
-  /// Obtener entrada de diario por ID
-  Future<Map<String, dynamic>?> getDiaryEntryById(int id) async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'diary_entries',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-
-    if (maps.isEmpty) return null;
-
-    final map = maps.first;
-    try {
-      final contentJson = jsonDecode(map['content_json'] as String);
-      final imagePaths = (map['compressed_image_paths'] as String?)
-              ?.split('|')
-              .where((path) => path.isNotEmpty)
-              .toList() ??
-          [];
-
-      return {
-        ...map,
-        'content_json': contentJson,
-        'compressed_image_paths': imagePaths,
-      };
-    } catch (e) {
-      print('Error parsing diary entry: $e');
-      return map;
-    }
-  }
-
-  /// Obtener entradas de diario por fecha
-  Future<List<Map<String, dynamic>>> getDiaryEntriesByDate(
-      DateTime date) async {
-    final db = await database;
-    final dateStr = date.toIso8601String().split('T')[0];
-
-    final List<Map<String, dynamic>> maps = await db.query(
-      'diary_entries',
-      where: 'date LIKE ?',
-      whereArgs: ['$dateStr%'],
-      orderBy: 'created_at DESC',
-    );
-
-    return maps.map((map) {
-      try {
-        final contentJson = jsonDecode(map['content_json'] as String);
-        final imagePaths = (map['compressed_image_paths'] as String?)
-                ?.split('|')
-                .where((path) => path.isNotEmpty)
-                .toList() ??
-            [];
-
-        return {
-          ...map,
-          'content_json': contentJson,
-          'compressed_image_paths': imagePaths,
-        };
-      } catch (e) {
-        print('Error parsing diary entry: $e');
-        return map;
-      }
-    }).toList();
-  }
-
-  /// Obtener entradas de diario por mes
-  Future<List<Map<String, dynamic>>> getDiaryEntriesByMonth(
-      int year, int month) async {
-    final db = await database;
-    final startDate = DateTime(year, month, 1).toIso8601String();
-    final endDate = DateTime(year, month + 1, 0).toIso8601String();
-
-    final List<Map<String, dynamic>> maps = await db.rawQuery('''
-    SELECT * FROM diary_entries 
-    WHERE date BETWEEN ? AND ?
-    ORDER BY date DESC
-  ''', [startDate, endDate]);
-
-    return maps.map((map) {
-      try {
-        final contentJson = jsonDecode(map['content_json'] as String);
-        final imagePaths = (map['compressed_image_paths'] as String?)
-                ?.split('|')
-                .where((path) => path.isNotEmpty)
-                .toList() ??
-            [];
-
-        return {
-          ...map,
-          'content_json': contentJson,
-          'compressed_image_paths': imagePaths,
-        };
-      } catch (e) {
-        print('Error parsing diary entry: $e');
-        return map;
-      }
-    }).toList();
-  }
-
-  /// Buscar entradas de diario por texto
-  Future<List<Map<String, dynamic>>> searchDiaryEntries(String query) async {
-    final db = await database;
-
-    final List<Map<String, dynamic>> maps = await db.rawQuery('''
-    SELECT * FROM diary_entries 
-    WHERE title LIKE ? OR content_json LIKE ?
-    ORDER BY date DESC
-  ''', ['%$query%', '%$query%']);
-
-    return maps.map((map) {
-      try {
-        final contentJson = jsonDecode(map['content_json'] as String);
-        final imagePaths = (map['compressed_image_paths'] as String?)
-                ?.split('|')
-                .where((path) => path.isNotEmpty)
-                .toList() ??
-            [];
-
-        return {
-          ...map,
-          'content_json': contentJson,
-          'compressed_image_paths': imagePaths,
-        };
-      } catch (e) {
-        print('Error parsing diary entry: $e');
-        return map;
-      }
-    }).toList();
-  }
-
-  /// Obtener estadísticas del diario
-  Future<Map<String, dynamic>> getDiaryStatistics() async {
-    final db = await database;
-
-    // Total de entradas
-    final totalResult =
-        await db.rawQuery('SELECT COUNT(*) as count FROM diary_entries');
-    final totalEntries = Sqflite.firstIntValue(totalResult) ?? 0;
-
-    // Entradas este mes
-    final now = DateTime.now();
-    final firstDayMonth = DateTime(now.year, now.month, 1);
-    final monthResult = await db.rawQuery(
-        'SELECT COUNT(*) as count FROM diary_entries WHERE date >= ?',
-        [firstDayMonth.toIso8601String()]);
-    final entriesThisMonth = Sqflite.firstIntValue(monthResult) ?? 0;
-
-    // Estado de ánimo más común
-    final moodResult = await db.rawQuery('''
-    SELECT mood, COUNT(*) as count FROM diary_entries 
-    WHERE mood IS NOT NULL AND mood != '' 
-    GROUP BY mood ORDER BY count DESC LIMIT 1
-  ''');
-    final mostCommonMood =
-        moodResult.isNotEmpty ? moodResult.first['mood'] : null;
-
-    // Racha de escritura (días consecutivos)
-    final streakResult = await db.rawQuery('''
-    SELECT date FROM diary_entries 
-    ORDER BY date DESC
-  ''');
-
-    int writingStreak = 0;
-    if (streakResult.isNotEmpty) {
-      DateTime currentDate = DateTime.now();
-      for (final row in streakResult) {
-        final dateStr = row['date'] as String;
-        final date = DateTime.parse(dateStr);
-        final difference = currentDate.difference(date).inDays;
-
-        if (difference == writingStreak) {
-          writingStreak++;
-        } else {
-          break;
-        }
-      }
-    }
-
-    // Total de imágenes subidas
-    final imagesResult = await db.rawQuery('''
-    SELECT compressed_image_paths FROM diary_entries
-  ''');
-
-    int totalImages = 0;
-    for (final row in imagesResult) {
-      final paths = (row['compressed_image_paths'] as String?) ?? '';
-      if (paths.isNotEmpty) {
-        totalImages += paths.split('|').length;
-      }
-    }
-
-    return {
-      'total_entries': totalEntries,
-      'entries_this_month': entriesThisMonth,
-      'most_common_mood': mostCommonMood,
-      'writing_streak': writingStreak,
-      'total_images': totalImages,
-      'avg_entries_per_month': totalEntries > 0
-          ? (totalEntries / (now.month + (now.year - 2024) * 12))
-          : 0.0,
-    };
-  }
-
-  /// Actualizar la estructura de la tabla diario si es necesario
-  Future<void> upgradeDiaryTableIfNeeded() async {
-    final db = await database;
-
-    try {
-      // Verificar si las columnas existen
-      final columns = await db.rawQuery('PRAGMA table_info(diary_entries)');
-      final columnNames = columns.map((col) => col['name'] as String).toList();
-
-      // Agregar columnas faltantes
-      if (!columnNames.contains('title')) {
-        await db.execute(
-            'ALTER TABLE diary_entries ADD COLUMN title TEXT NOT NULL DEFAULT "Diary Entry"');
-      }
-
-      if (!columnNames.contains('mood')) {
-        await db.execute(
-            'ALTER TABLE diary_entries ADD COLUMN mood TEXT NOT NULL DEFAULT "neutral"');
-      }
-
-      if (!columnNames.contains('content_json')) {
-        await db.execute(
-            'ALTER TABLE diary_entries ADD COLUMN content_json TEXT NOT NULL DEFAULT "{}"');
-      }
-
-      if (!columnNames.contains('compressed_image_paths')) {
-        await db.execute(
-            'ALTER TABLE diary_entries ADD COLUMN compressed_image_paths TEXT DEFAULT ""');
-      }
-
-      if (!columnNames.contains('created_at')) {
-        await db.execute(
-            'ALTER TABLE diary_entries ADD COLUMN created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP');
-      }
-
-      if (!columnNames.contains('updated_at')) {
-        await db.execute(
-            'ALTER TABLE diary_entries ADD COLUMN updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP');
-      }
-
-      // Crear índice si no existe
-      await db.execute('''
-      CREATE INDEX IF NOT EXISTS idx_diary_date 
-      ON diary_entries(date)
-    ''');
-    } catch (e) {
-      print('Error upgrading diary table: $e');
-      // Si la tabla no existe, crearla
-      await _createDiaryTables(db);
-    }
-  }
 
   // Inserta un estudiante desde Firebase
   Future<int> insertEstudianteFromFirebase(
@@ -1419,7 +1043,7 @@ Future<int> updateDiaryEntry({
   //TODO Sincronización con Supabase
 
   // =================== AGENDA CITA ===================
-  //!SUPABASEEE
+
   Future<Map<String, dynamic>?> createAgendaCita({
     required DateTime fechaCita,
     String? motivoCita,
@@ -1439,7 +1063,7 @@ Future<int> updateDiaryEntry({
       debugPrint('👤 Estudiante: $nombreEstudiante');
       debugPrint('🆔 UID: $estudianteUid');
       debugPrint('👨‍💼 Admin ID: $adminId');
-
+      
       // Verificar si el admin_id existe en la tabla admins
       String? adminIdValido = adminId;
       if (adminId != null && adminId.isNotEmpty) {
@@ -1449,10 +1073,9 @@ Future<int> updateDiaryEntry({
               .select('id')
               .eq('id', adminId)
               .maybeSingle();
-
+          
           if (adminExiste == null) {
-            debugPrint(
-                '⚠️ El admin_id no existe en la tabla admins, usando null');
+            debugPrint('⚠️ El admin_id no existe en la tabla admins, usando null');
             adminIdValido = null;
           } else {
             debugPrint('✅ Admin verificado en la tabla admins');
@@ -1462,7 +1085,7 @@ Future<int> updateDiaryEntry({
           adminIdValido = null;
         }
       }
-
+      
       // Verificar si ya existe una cita con la misma fecha y estudiante
       try {
         final citasExistentes = await _supabase
@@ -1471,12 +1094,10 @@ Future<int> updateDiaryEntry({
             .eq('estudiante_uid', estudianteUid)
             .eq('fecha_cita', fechaCita.toIso8601String())
             .maybeSingle();
-
+        
         if (citasExistentes != null) {
-          debugPrint(
-              '⚠️ Ya existe una cita para este estudiante en esta fecha');
-          throw Exception(
-              'Ya existe una cita para este estudiante en la fecha seleccionada');
+          debugPrint('⚠️ Ya existe una cita para este estudiante en esta fecha');
+          throw Exception('Ya existe una cita para este estudiante en la fecha seleccionada');
         }
       } catch (e) {
         // Si el error es sobre cita duplicada, re-lanzarlo
@@ -1486,7 +1107,7 @@ Future<int> updateDiaryEntry({
         // Si es otro error (como permisos), continuar con la inserción
         debugPrint('⚠️ No se pudo verificar citas existentes: $e');
       }
-
+      
       final data = {
         'fecha_cita': fechaCita.toIso8601String(),
         'motivo_cita': motivoCita,
@@ -1510,66 +1131,54 @@ Future<int> updateDiaryEntry({
           .select()
           .single()
           .timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          debugPrint('⏱️ Timeout insertando cita en Supabase');
-          throw TimeoutException('La operación tardó demasiado');
-        },
-      );
+            const Duration(seconds: 10),
+            onTimeout: () {
+              debugPrint('⏱️ Timeout insertando cita en Supabase');
+              throw TimeoutException('La operación tardó demasiado');
+            },
+          );
 
-      debugPrint(
-          '✅ Cita creada exitosamente: ${response['id_agendacita'] ?? response['id']}');
+      debugPrint('✅ Cita creada exitosamente: ${response['id_agendacita'] ?? response['id']}');
       return response;
     } on PostgrestException catch (e) {
       debugPrint('❌ Error PostgrestException: ${e.code} - ${e.message}');
       debugPrint('❌ Detalles: ${e.details}');
       debugPrint('❌ Hint: ${e.hint}');
-
+      
       String mensajeError = 'Error al crear la cita';
-
+      
       // Manejar errores específicos de Supabase
-      if (e.code == '23505' ||
-          e.code == 'PGRST116' ||
-          e.message.contains('duplicate') ||
-          e.message.contains('unique')) {
-        mensajeError =
-            'Ya existe una cita con estos datos. Por favor, verifica que no estés creando una cita duplicada.';
+      if (e.code == '23505' || e.code == 'PGRST116' || e.message.contains('duplicate') || e.message.contains('unique')) {
+        mensajeError = 'Ya existe una cita con estos datos. Por favor, verifica que no estés creando una cita duplicada.';
       } else if (e.code == '23503' || e.message.contains('foreign key')) {
-        mensajeError =
-            'Error de referencia: El admin_id no existe en la tabla de administradores.';
+        mensajeError = 'Error de referencia: El admin_id no existe en la tabla de administradores.';
       } else if (e.code == '23502' || e.message.contains('not null')) {
         mensajeError = 'Error de validación: Faltan campos obligatorios.';
       } else if (e.message.isNotEmpty) {
         mensajeError = 'Error: ${e.message}';
       }
-
-      print(
-          'Error creating agenda cita (PostgrestException): ${e.code} - ${e.message}\n${e.details}');
+      
+      print('Error creating agenda cita (PostgrestException): ${e.code} - ${e.message}\n${e.details}');
       throw Exception(mensajeError);
     } on TimeoutException catch (e) {
       debugPrint('❌ TimeoutException: $e');
       print('Error creating agenda cita (TimeoutException): $e');
-      throw Exception(
-          'La operación tardó demasiado. Por favor, intenta nuevamente.');
+      throw Exception('La operación tardó demasiado. Por favor, intenta nuevamente.');
     } catch (e, stack) {
       debugPrint('❌ Error creating agenda cita: $e');
       debugPrint('Stack trace: $stack');
-
+      
       String mensajeError = 'Error al crear la cita';
       if (e.toString().contains('409') || e.toString().contains('conflict')) {
-        mensajeError =
-            'Conflicto: Ya existe una cita con estos datos o hay un problema con los datos enviados.';
-      } else if (e.toString().contains('permission') ||
-          e.toString().contains('permission-denied')) {
+        mensajeError = 'Conflicto: Ya existe una cita con estos datos o hay un problema con los datos enviados.';
+      } else if (e.toString().contains('permission') || e.toString().contains('permission-denied')) {
         mensajeError = 'Error de permisos: No tienes permiso para crear citas.';
-      } else if (e.toString().contains('network') ||
-          e.toString().contains('connection')) {
+      } else if (e.toString().contains('network') || e.toString().contains('connection')) {
         mensajeError = 'Error de conexión: Verifica tu conexión a internet.';
-      } else if (e.toString().isNotEmpty &&
-          !e.toString().contains('Exception:')) {
+      } else if (e.toString().isNotEmpty && !e.toString().contains('Exception:')) {
         mensajeError = 'Error: ${e.toString()}';
       }
-
+      
       print('Error creating agenda cita: $e\n$stack');
       throw Exception(mensajeError);
     }
@@ -1582,7 +1191,8 @@ Future<int> updateDiaryEntry({
           .select()
           .order('fecha_cita', ascending: true);
 
-      print('Sincronizando ${response.length} citas desde Supabase...');
+      print(
+          'Sincronizando ${response.length} citas desde Supabase...');
       print('Respuesta de Supabase: $response');
       // Guardar en SQLite
       final db = await database;
@@ -1768,7 +1378,6 @@ Future<int> updateDiaryEntry({
     }
   }
 
-//!CAMBIADO AHORA EVALUA CON OPERADOR TERNEARIO SI ES SINCRANIZADO O NO.
   Future<List<Map<String, dynamic>>> readModulos() async {
     try {
       final response = await _supabase
@@ -1776,38 +1385,27 @@ Future<int> updateDiaryEntry({
           .select()
           .order('fecha_creacion', ascending: false);
 
-      // Guardar en SQLite - Usar INSERT OR REPLACE para evitar errores de duplicados
+      // Guardar en SQLite
       final db = await database;
+      await db.delete('modulos');
 
       for (var modulo in response) {
-        try {
-          await db.insert(
-            'modulos',
-            {
-              'id': modulo['id'],
-              'titulo': modulo['titulo'],
-              'contenido': modulo['contenido'],
-              'fecha_creacion': modulo['fecha_creacion'],
-              'fecha_actualizacion': modulo['fecha_actualizacion'],
-              'sincronizado': modulo['sincronizado'] ? 1 : 0,
-            },
-            conflictAlgorithm:
-                ConflictAlgorithm.replace, // Esto reemplaza si existe
-          );
-        } catch (e) {
-          print('Error insertando módulo ${modulo['id']}: $e');
-          // Continuar con el siguiente
-        }
+        await db.insert('modulos', {
+          'id': modulo['id'],
+          'titulo': modulo['titulo'],
+          'contenido': modulo['contenido'],
+          'fecha_creacion': modulo['fecha_creacion'],
+          'fecha_actualizacion': modulo['fecha_actualizacion'],
+          'sincronizado': modulo['sincronizado'] ? 1 : 0,
+        });
       }
 
       return response;
     } catch (e) {
-      print('Error reading modulos from Supabase: $e');
+      print('Error reading modulos: $e');
       // Si falla, retornar datos locales
       final db = await database;
-      final localData = await db.query('modulos');
-      print('✅ Retornando ${localData.length} módulos desde SQLite');
-      return localData;
+      return await db.query('modulos');
     }
   }
 
@@ -1834,7 +1432,58 @@ Future<int> updateDiaryEntry({
   }
 
   // =================== MODULO IMAGENES ===================
+Future<Map<String, dynamic>?> createModuloImagen({
+  required String filePath,
+  required String moduloId,
+  int orden = 0,
+  Uint8List? webBytes, // 👈 para Web
+}) async {
+  try {
+    final fileName =
+        '${DateTime.now().millisecondsSinceEpoch}_${filePath.split('/').last}';
 
+    late Uint8List bytes;
+
+    if (kIsWeb) {
+      if (webBytes == null) {
+        throw Exception('En Web debes pasar webBytes');
+      }
+      bytes = webBytes;
+    } else {
+      final file = File(filePath);
+      if (!await file.exists()) {
+        throw Exception('El archivo no existe');
+      }
+      bytes = await file.readAsBytes();
+    }
+
+    await _supabase.storage
+        .from('modulo_imagenes')
+        .uploadBinary(fileName, bytes);
+
+    final imageUrl = _supabase.storage
+        .from('modulo_imagenes')
+        .getPublicUrl(fileName);
+
+    final data = {
+      'id': const Uuid().v4(),
+      'modulo_id': moduloId,
+      'url': imageUrl,
+      'orden': orden,
+    };
+
+    final response = await _supabase
+        .from('modulo_imagenes')
+        .insert(data)
+        .select()
+        .single();
+
+    return response;
+  } catch (e) {
+    print('Error creando módulo imagen: $e');
+    return null;
+  }
+}
 
 
   Future<List<Map<String, dynamic>>> readModuloImagenes(
@@ -1917,6 +1566,7 @@ Future<int> updateDiaryEntry({
   // Añadir estos métodos a la clase DatabaseHelper
 
 // =================== GESTIÓN DE ARCHIVOS MULTIMEDIA ===================
+
 Future<Map<String, dynamic>?> uploadFileToStorage({
   required String filePath,
   required String bucketName,
@@ -1928,18 +1578,21 @@ Future<Map<String, dynamic>?> uploadFileToStorage({
         '${DateTime.now().millisecondsSinceEpoch}_${filePath.split('/').last}';
 
     late Uint8List bytes;
+    int fileSize = 0;
 
     if (kIsWeb) {
       if (webBytes == null) {
         throw Exception('En Web debes pasar webBytes');
       }
       bytes = webBytes;
+      fileSize = webBytes.length;
     } else {
       final file = File(filePath);
       if (!await file.exists()) {
         throw Exception('El archivo no existe');
       }
       bytes = await file.readAsBytes();
+      fileSize = bytes.length;
     }
 
     await _supabase.storage
@@ -1961,15 +1614,15 @@ Future<Map<String, dynamic>?> uploadFileToStorage({
     return {
       'fileName': fileName,
       'publicUrl': publicUrl,
+      'fileSize': fileSize,
       'fileType': tipoArchivo,
       'extension': extension,
     };
   } catch (e) {
-    debugPrint('Error uploading file: $e');
+    print('Error uploading file: $e');
     return null;
   }
 }
-
 
 
   /// Elimina un archivo del storage de Supabase
@@ -2646,48 +2299,5 @@ Future<Map<String, dynamic>?> uploadFileToStorage({
         'ultima_actualizacion': DateTime.now().toIso8601String(),
       };
     }
-  }
-
-  // En DatabaseHelper.dart
-  Future<List<Map<String, dynamic>>> getAppointmentsForMonth({
-    required int studentId,
-    required DateTime month,
-  }) async {
-    final firstDay = DateTime(month.year, month.month, 1);
-    final lastDay = DateTime(month.year, month.month + 1, 0);
-
-    final db = await database;
-    return await db.query(
-      'agenda_citas',
-      where: 'id_estudiante = ? AND fecha_cita BETWEEN ? AND ?',
-      whereArgs: [
-        studentId,
-        firstDay.toIso8601String(),
-        lastDay.toIso8601String(),
-      ],
-    );
-  }
-
-  Future<List<Map<String, dynamic>>> getActiveGoalsForMonth({
-    required int studentId,
-    required DateTime month,
-  }) async {
-    final firstDay = DateTime(month.year, month.month, 1);
-    final lastDay = DateTime(month.year, month.month + 1, 0);
-
-    final db = await database;
-    return await db.query(
-      'metas_semanales',
-      where: '''
-      id_estudiante = ? AND 
-      (fecha_inicio <= ? AND fecha_fin >= ?) AND
-      estado_meta = "activa"
-    ''',
-      whereArgs: [
-        studentId,
-        lastDay.toIso8601String(),
-        firstDay.toIso8601String()
-      ],
-    );
   }
 }

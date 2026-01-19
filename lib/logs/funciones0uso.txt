@@ -1,0 +1,43 @@
+  Future<Map<String, dynamic>?> createModuloImagen({
+    required String filePath,
+    required String moduloId,
+    int orden = 0,
+  }) async {
+    try {
+      // Generar nombre único
+      final fileName =
+          '${DateTime.now().millisecondsSinceEpoch}_${filePath.split('/').last}';
+
+      // Subir imagen al bucket
+      final uploadResponse = await _supabase.storage
+          .from('modulo_imagenes') // nombre del bucket en Supabase
+          .upload(fileName, File(filePath));
+
+      if (uploadResponse.isEmpty) {
+        throw Exception('Error al subir la imagen');
+      }
+
+      // Obtener URL pública
+      final imageUrl =
+          _supabase.storage.from('modulo_imagenes').getPublicUrl(fileName);
+
+      // Insertar registro en la tabla
+      final data = {
+        'id': const Uuid().v4(),
+        'modulo_id': moduloId,
+        'url': imageUrl,
+        'orden': orden,
+      };
+
+      final response = await _supabase
+          .from('modulo_imagenes')
+          .insert(data)
+          .select()
+          .single();
+
+      return response;
+    } catch (e) {
+      print('Error creando módulo imagen: $e');
+      return null;
+    }
+  }
