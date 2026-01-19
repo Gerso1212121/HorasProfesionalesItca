@@ -563,7 +563,7 @@ class _CitasDashboardMejoradoState extends State<CitasDashboardMejorado> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Sede: ${cita['sede_estudiante']?.toString().toUpperCase() ?? 'SIN SEDE'}',
+                        'Sede: ${cita['sede']?.toString().toUpperCase() ?? 'SIN SEDE'}',
                         style: GoogleFonts.itim(
                           fontSize: 12,
                           color: Colors.white.withOpacity(0.9),
